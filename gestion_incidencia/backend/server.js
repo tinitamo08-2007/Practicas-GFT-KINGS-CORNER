@@ -4,7 +4,7 @@ const cors = require('cors');
 const app = express();
 const PORT = 3000;
 
-// Permisos Angular
+// Permisos para que Angular entre sin problemas
 app.use(cors());
 
 // Ruta que entrega el JSON de prueba
