@@ -7,7 +7,7 @@ Este proyecto contiene la arquitectura base para la plataforma de triaje y gesti
 
 ---
 
-## 🚀 1. Encender la Arquitectura (Desde cero)
+## 1. Encender la Arquitectura (Desde cero)
 
 Para levantar todos los contenedores por primera vez o reanudar el proyecto, ejecuta:
 
@@ -17,7 +17,7 @@ Para levantar todos los contenedores por primera vez o reanudar el proyecto, eje
 
 ---
 
-## 🧠 2. Levantar y Ejecutar el Backend (Node.js)
+## 2. Levantar y Ejecutar el Backend (Node.js)
 
 1. **Entrar al contenedor del Backend:**
    `docker exec -it mi_backend bash`
@@ -33,7 +33,7 @@ Para levantar todos los contenedores por primera vez o reanudar el proyecto, eje
 
 ---
 
-## 💻 3. Levantar y Ejecutar el Frontend (Angular)
+## 3. Levantar y Ejecutar el Frontend (Angular)
 
 1. **Entrar al contenedor de Angular:**
    `docker exec -it mi_frontend bash`
@@ -46,14 +46,14 @@ Para levantar todos los contenedores por primera vez o reanudar el proyecto, eje
 
 ---
 
-## 🔎 4. Comprobación del Entorno (URLs)
+## 4. Comprobación del Entorno (URLs)
 
 * **Frontend (Interfaz de Usuario):** http://localhost:4200
 * **Backend (API JSON de prueba):** http://localhost:3000/api/prueba
 
 ---
 
-## 📊 5. Comandos Útiles de Control
+## 5. Comandos Útiles de Control
 
 * **Ver el estado de los contenedores activos:** `docker ps`
 * **Ver los logs de un contenedor en tiempo real:** `docker logs -f mi_backend`
