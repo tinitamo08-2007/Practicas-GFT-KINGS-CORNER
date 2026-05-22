@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # 1. LA BASE DE DATOS (PostgreSQL)
+  base_de_datos:
+    image: postgres:15
+    container_name: mi_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_contraseña
+      POSTGRES_DB: base_incidencias
+    ports:
+      - "5432:5432"
+    volumes:
+      - datos_postgres:/var/lib/postgresql/data
+
+  # 2. EL CEREBRO / BACKEND (Node.js)
+  backend_node:
+    image: node:18
+    container_name: mi_backend
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+    command: sh -c "npm init -y && npm install express && node -e 'console.log(\"Backend Node funcionando en el puerto 3000\")' && tail -f /dev/null"
+    depends_on:
+      - base_de_datos
+
+  # 3. LA WEB / FRONTEND (Angular)
+  frontend_angular:
+    image: node:18
+    container_name: mi_frontend
+    working_dir: /app
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install -g @angular/cli && tail -f /dev/null"
+    depends_on:
+      - backend_node
+
+volumes:
+  datos_postgres:
