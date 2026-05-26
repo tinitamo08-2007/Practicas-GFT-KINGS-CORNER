@@ -2,6 +2,7 @@
 /openspec
 
 # Personal MCP config (each dev sets up locally)
+CLAUDE.md
 frontend/.vscode/mcp.json
 
 # OS
