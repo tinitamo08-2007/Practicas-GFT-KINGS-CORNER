@@ -1,15 +1,17 @@
 // ============================================================
 // ARCHIVO: src/routes/webhooks.js
-// FUNCION: Ruta para recibir eventos de Jira.
+// CAMBIOS: Se añade ruta para sincronizar hacia Jira
 // ============================================================
 
 const express = require('express');
 const router  = express.Router();
 
-const { recibirEventoJira } = require('../controllers/Webhookscontroller');
+const { recibirEventoJira, sincronizarHaciaJira } = require('../controllers/Webhookscontroller');
 
-// POST /api/webhooks/jira
-// Esta URL la configuramos en Jira para que nos avise de cambios
+// POST /api/webhooks/jira              -> Jira nos avisa de cambios
 router.post('/jira', recibirEventoJira);
+
+// POST /api/webhooks/sincronizar/5     -> nosotros actualizamos Jira
+router.post('/sincronizar/:id', sincronizarHaciaJira);
 
 module.exports = router;

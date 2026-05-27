@@ -11,7 +11,7 @@
 
 // Importamos los datos de prueba
 const incidencias = require('../db/Mockincidencias');
-const { analizaarIncidencia } = require('../services//Iaservice');
+const { analizaarIncidencia } = require('../services/Iaservice');
 
 // Contador para los IDs nuevos que se vayan creando
 // Empieza en 51 porque el mock ya tiene del 1 al 50
@@ -256,5 +256,64 @@ const eliminar = (req, res) => {
     res.json({ mensaje: `Incidencia ${eliminada.codigo} eliminada correctamente.` });
 };
 
+// ============================================================
+// GET /api/incidencias/:id/sugerencia
+// Consulta si la IA ya genero la sugerencia para esta incidencia
+// ============================================================
+const obtenerSugerencia = (req, res) => {
+    const id = parseInt(req.params.id);
+    const incidencia = incidencias.find(inc => inc.id === id);
 
-module.exports = { obtenerTodas, obtenerPorId, crear, actualizar, eliminar };
+    if (!incidencia) {
+        return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
+    }
+
+    const sugerencia = sugerencias.find(s => s.incidencia_id === id);
+
+    if (!sugerencia) {
+        return res.json({
+            procesada: false,
+            mensaje: 'La IA aun no ha generado una sugerencia para esta incidencia.'
+        });
+    }
+
+    res.json({ procesada: true, sugerencia });
+};
+
+
+// ============================================================
+// PATCH /api/incidencias/:id/sugerencia
+// El tecnico acepta o rechaza la sugerencia de la IA
+// ============================================================
+const revisarSugerencia = (req, res) => {
+    const id = parseInt(req.params.id);
+    const { aceptada, motivo_rechazo } = req.body;
+
+    if (aceptada === undefined) {
+        return res.status(400).json({ error: 'Debes indicar si la sugerencia fue aceptada (true o false).' });
+    }
+
+    const indice = sugerencias.findIndex(s => s.incidencia_id === id);
+
+    if (indice === -1) {
+        return res.status(404).json({ error: `No hay sugerencia de IA para la incidencia ${id}.` });
+    }
+
+    sugerencias[indice].aceptada       = aceptada;
+    sugerencias[indice].motivo_rechazo = motivo_rechazo || null;
+
+    res.json({
+        mensaje:    aceptada ? 'Sugerencia aceptada y aplicada.' : 'Sugerencia rechazada.',
+        sugerencia: sugerencias[indice]
+    });
+};
+
+module.exports = { 
+    obtenerTodas, 
+    obtenerPorId, 
+    crear, 
+    actualizar, 
+    eliminar, 
+    obtenerSugerencia, 
+    revisarSugerencia 
+};
