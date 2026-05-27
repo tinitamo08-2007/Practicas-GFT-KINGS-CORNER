@@ -3,14 +3,23 @@
 //          Ahora trabaja con el array en memoria en lugar de
 //          la base de datos. Cuando tengamos PostgreSQL, solo
 //          hay que cambiar este archivo.
+//CAMBIOS RESPECTO A LA VERSION ANTERIOR:
+//   - Al crear una incidencia, se llama a la IA automaticamente
+//   - Las sugerencias de la IA se guardan en el array "sugerencias"
+//   - Se anade endpoint para ver la sugerencia de una incidencia
 // ============================================================
 
 // Importamos los datos de prueba
 const incidencias = require('../db/Mockincidencias');
+const { analizaarIncidencia } = require('../services//Iaservice');
 
 // Contador para los IDs nuevos que se vayan creando
 // Empieza en 51 porque el mock ya tiene del 1 al 50
 let proximoId = 51;
+
+// Array separado para guardar las sugerencias de la IA
+// Cuando haya BD, esto pasara a la tabla sugerencias_ia
+const sugerencias = [];
 
 
 // ----------------------------------------------------------
@@ -76,8 +85,10 @@ const obtenerPorId = (req, res) => {
     if (!incidencia) {
         return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
     }
+      // Incluimos la sugerencia de IA si existe
+    const sugerencia = sugerencias.find(s => s.incidencia_id === id) || null;
 
-    res.json(incidencia);
+    res.json({...incidencia, sugerencia_ia: sugerencia});
 };
 
 
@@ -146,7 +157,8 @@ const crear = (req, res) => {
         fecha_creacion:      ahora,
         fecha_actualizacion: ahora,
         fecha_cierre:        null,
-        sla_vencimiento:     calcularSLA(prioridad)
+        sla_vencimiento:     calcularSLA(prioridad),
+        ia_procesada:        false  // indica si la IA ya analizo esta incidencia
     };
 
     // Anyadimos al array y aumentamos el contador de IDs

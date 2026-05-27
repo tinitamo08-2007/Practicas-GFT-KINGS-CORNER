@@ -68,8 +68,8 @@ const analizarIncidencia = async (incidencia) => {
         //   - Le decimos que no ponga nada fuera del JSON (sin saludos, sin explicaciones)
         const mensajes = [
             {
-        role: 'system',
-        content: `Eres un analista senior de soporte tecnico IT con 15 años de experiencia en entornos empresariales.
+                role: 'system',
+                content: `Eres un analista senior de soporte tecnico IT con 15 años de experiencia en entornos empresariales.
 Tu especialidad es clasificar, priorizar y resolver incidencias de forma precisa y rapida.
  
 Recibes incidencias que pueden estar escritas en español o en ingles. Detecta el idioma automaticamente.
@@ -111,10 +111,10 @@ Criterios de escalado:
 - N1: el problema se puede resolver con guia remota sin acceso al equipo
 - N2: requiere acceso remoto al equipo o intervencion del administrador del sistema
 - N3: requiere presencia fisica, cambio de hardware, o intervencion de un proveedor externo`
-    },
-    {
-        role: 'user',
-        content: `Analiza esta incidencia de soporte IT y devuelve el JSON:
+            },
+            {
+                role: 'user',
+                content: `Analiza esta incidencia de soporte IT y devuelve el JSON:
  
 Titulo: ${incidencia.titulo}
 Descripcion: ${incidencia.descripcion || 'Sin descripcion'}
@@ -123,7 +123,7 @@ Prioridad actual: ${incidencia.prioridad || 'Sin prioridad'}
 Reportado por: ${incidencia.reportado_por || 'Desconocido'}
 Equipo afectado: ${incidencia.equipo || 'No especificado'}
 Origen del reporte: ${incidencia.origen || 'No especificado'}`
-    }
+            }
         ];
 
         // ── Construimos los headers de la peticion ────────────────
@@ -133,7 +133,7 @@ Origen del reporte: ${incidencia.origen || 'No especificado'}`
         // Content-Type: le decimos que el cuerpo es JSON.
         const cabeceras = {
             'Authorization': `Bearer ${process.env.IA_API_KEY}`,
-            'Content-Type':  'application/json'
+            'Content-Type': 'application/json'
         };
 
         // ── Construimos el cuerpo de la peticion ──────────────────
@@ -147,11 +147,11 @@ Origen del reporte: ${incidencia.origen || 'No especificado'}`
         //                  Cuanto mas alto (max 2), mas creativa e impredecible
         //                  es la IA. Para analisis tecnicos lo queremos bajo.
         const cuerpo = {
-            model:           process.env.IA_MODELO,
-            messages:        mensajes,
+            model: process.env.IA_MODELO,
+            messages: mensajes,
             response_format: { type: 'json_object' },
-            max_tokens:      800,
-            temperature:     0.2
+            max_tokens: 800,
+            temperature: 0.2
         };
 
         console.log(`iaService: Analizando incidencia "${incidencia.titulo}" con Groq...`);
@@ -162,9 +162,9 @@ Origen del reporte: ${incidencia.origen || 'No especificado'}`
         // Le pasamos la URL, el metodo POST, los headers y el cuerpo.
         // Usamos await porque es una operacion asincrona (tarda unos segundos).
         const respuesta = await fetch(GROQ_URL, {
-            method:  'POST',
+            method: 'POST',
             headers: cabeceras,
-            body:    JSON.stringify(cuerpo)
+            body: JSON.stringify(cuerpo)
         });
 
         // ── Manejamos los errores de la API ───────────────────────
@@ -222,7 +222,7 @@ Origen del reporte: ${incidencia.origen || 'No especificado'}`
         try {
             const textoLimpio = contenidoTexto
                 .replace(/```json/g, '')  // elimina el inicio de bloque markdown
-                .replace(/```/g,     '')  // elimina el cierre de bloque markdown
+                .replace(/```/g, '')  // elimina el cierre de bloque markdown
                 .trim();                   // elimina espacios y saltos al inicio y final
 
             const analisis = JSON.parse(textoLimpio);
