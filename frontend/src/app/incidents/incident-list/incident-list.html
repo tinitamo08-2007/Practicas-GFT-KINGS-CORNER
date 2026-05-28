@@ -1,0 +1,36 @@
+<section class="incident-list">
+  <h1>Incidencias</h1>
+
+  <div class="incident-list__table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Código</th>
+          <th scope="col">Título</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Prioridad</th>
+          <th scope="col">Equipo</th>
+          <th scope="col">Fecha de creación</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (incidents$ | async; as rows) {
+          @for (row of rows; track row.id) {
+            <tr>
+              <td><span class="mono">{{ row.codigo }}</span></td>
+              <td>{{ row.titulo }}</td>
+              <td>
+                <span class="tag" [class]="estadoTagClass(row.estado)">{{ row.estado }}</span>
+              </td>
+              <td>
+                <span class="tag" [class]="prioridadTagClass(row.prioridad)">{{ row.prioridad }}</span>
+              </td>
+              <td>{{ row.equipo ?? '—' }}</td>
+              <td>{{ row.fechaCreacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
