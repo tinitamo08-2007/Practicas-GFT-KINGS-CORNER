@@ -2,6 +2,8 @@
 // FUNCION: Punto de entrada del backend.
 //          Por ahora sin base de datos. Cuando la tengamos,
 //          volvemos a anadir el pool de PostgreSQL aqui.
+// Es lo primero que se ejecuta cuando haces npm start. 
+// Su unica funcion es arrancar el servidor, cargar las variables del .env, y decirle a Express que rutas existen. 
 // ============================================================
 
 // servicios de Jira e IA
@@ -16,7 +18,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
 
 // Importamos las rutas 
 const rutasIncidencias = require('./src/routes/incidencias');

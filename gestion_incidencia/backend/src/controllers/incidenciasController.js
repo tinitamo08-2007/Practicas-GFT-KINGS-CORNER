@@ -11,7 +11,7 @@
 
 // Importamos los datos de prueba
 const incidencias = require('../db/Mockincidencias');
-const { analizaarIncidencia } = require('../services/Iaservice');
+const { analizarIncidencia } = require('../services/Iaservice');
 
 // Contador para los IDs nuevos que se vayan creando
 // Empieza en 51 porque el mock ya tiene del 1 al 50
@@ -29,9 +29,9 @@ const sugerencias = [];
 const calcularSLA = (prioridad) => {
     const horas = {
         'Critica': 4,
-        'Alta':    24,
-        'Media':   48,
-        'Baja':    72
+        'Alta': 24,
+        'Media': 48,
+        'Baja': 72
     };
 
     const horasLimite = horas[prioridad] || 48;
@@ -53,9 +53,9 @@ const generarCodigo = (id) => {
 
 
 // Valores permitidos para validaciones
-const ESTADOS_VALIDOS    = ['Nueva', 'Asignada', 'En progreso', 'Pendiente', 'Resuelta', 'Cerrada', 'Cancelada'];
+const ESTADOS_VALIDOS = ['Nueva', 'Asignada', 'En progreso', 'Pendiente', 'Resuelta', 'Cerrada', 'Cancelada'];
 const PRIORIDADES_VALIDAS = ['Critica', 'Alta', 'Media', 'Baja'];
-const ORIGENES_VALIDOS   = ['Email', 'Web', 'Telefono'];
+const ORIGENES_VALIDOS = ['Email', 'Web', 'Telefono'];
 
 
 // ============================================================
@@ -85,10 +85,10 @@ const obtenerPorId = (req, res) => {
     if (!incidencia) {
         return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
     }
-      // Incluimos la sugerencia de IA si existe
+    // Incluimos la sugerencia de IA si existe
     const sugerencia = sugerencias.find(s => s.incidencia_id === id) || null;
 
-    res.json({...incidencia, sugerencia_ia: sugerencia});
+    res.json({ ...incidencia, sugerencia_ia: sugerencia });
 };
 
 
@@ -100,9 +100,9 @@ const crear = (req, res) => {
     const {
         titulo,
         descripcion,
-        prioridad    = 'Media',
+        prioridad = 'Media',
         categoria,
-        estado       = 'Nueva',
+        estado = 'Nueva',
         reportado_por,
         asignado_a,
         equipo,
@@ -140,29 +140,63 @@ const crear = (req, res) => {
 
     // Construimos el objeto nuevo con todos los campos del modelo
     const nueva = {
-        id:                  proximoId,
-        codigo:              generarCodigo(proximoId),
-        jira_id:             jira_id || null,
+        id: proximoId,
+        codigo: generarCodigo(proximoId),
+        jira_id: jira_id || null,
         titulo,
-        descripcion:         descripcion || null,
+        descripcion: descripcion || null,
         estado,
         prioridad,
-        categoria:           categoria || null,
-        reportado_por:       reportado_por || null,
-        asignado_a:          asignado_a || null,
-        equipo:              equipo || null,
-        origen:              origen || null,
-        causa:               causa || null,
-        solucion:            solucion || null,
-        fecha_creacion:      ahora,
+        categoria: categoria || null,
+        reportado_por: reportado_por || null,
+        asignado_a: asignado_a || null,
+        equipo: equipo || null,
+        origen: origen || null,
+        causa: causa || null,
+        solucion: solucion || null,
+        fecha_creacion: ahora,
         fecha_actualizacion: ahora,
-        fecha_cierre:        null,
-        sla_vencimiento:     calcularSLA(prioridad),
-        ia_procesada:        false  // indica si la IA ya analizo esta incidencia
+        fecha_cierre: null,
+        sla_vencimiento: calcularSLA(prioridad),
+        ia_procesada: false  // indica si la IA ya analizo esta incidencia
     };
 
     // Anyadimos al array y aumentamos el contador de IDs
     incidencias.push(nueva);
+
+
+    analizarIncidencia(nueva)
+        .then(analisis => {
+            if (analisis) {
+                sugerencias.push({
+                    incidencia_id: nueva.id,
+                    categoria_sugerida: analisis.categoria_sugerida,
+                    prioridad_sugerida: analisis.prioridad_sugerida,
+                    tiempo_sugerido: analisis.tiempo_sugerido,
+                    descripcion_mejorada: analisis.descripcion_mejorada,
+                    pasos_resolucion: analisis.pasos_resolucion,
+                    causa_probable: analisis.causa_probable || null,
+                    subcategoria: analisis.subcategoria || null,
+                    impacto: analisis.impacto || null,
+                    escalado_recomendado: analisis.escalado_recomendado || false,
+                    nivel_escalado: analisis.nivel_escalado || null,
+                    etiquetas: analisis.etiquetas || [],
+                    aceptada: null,
+                    motivo_rechazo: null,
+                    creada_en: new Date().toISOString()
+                });
+
+                const indice = incidencias.findIndex(inc => inc.id === nueva.id);
+                if (indice !== -1) {
+                    incidencias[indice].ia_procesada = true;
+                }
+
+                console.log(`IA: sugerencia guardada para ${nueva.codigo}`);
+            }
+        })
+        .catch(err => {
+            console.error('Error inesperado en el proceso de IA:', err.message);
+        });
     proximoId++;
 
     res.status(201).json(nueva);
@@ -209,17 +243,17 @@ const actualizar = (req, res) => {
     // Solo actualizamos los campos que llegaron (si llega undefined, mantenemos el valor actual)
     const actualizada = {
         ...actual,
-        titulo:              titulo        || actual.titulo,
-        descripcion:         descripcion   !== undefined ? descripcion   : actual.descripcion,
-        estado:              estado        || actual.estado,
-        prioridad:           prioridad     || actual.prioridad,
-        categoria:           categoria     !== undefined ? categoria     : actual.categoria,
-        reportado_por:       reportado_por !== undefined ? reportado_por : actual.reportado_por,
-        asignado_a:          asignado_a    !== undefined ? asignado_a    : actual.asignado_a,
-        equipo:              equipo        !== undefined ? equipo        : actual.equipo,
-        origen:              origen        !== undefined ? origen        : actual.origen,
-        causa:               causa         !== undefined ? causa         : actual.causa,
-        solucion:            solucion      !== undefined ? solucion      : actual.solucion,
+        titulo: titulo || actual.titulo,
+        descripcion: descripcion !== undefined ? descripcion : actual.descripcion,
+        estado: estado || actual.estado,
+        prioridad: prioridad || actual.prioridad,
+        categoria: categoria !== undefined ? categoria : actual.categoria,
+        reportado_por: reportado_por !== undefined ? reportado_por : actual.reportado_por,
+        asignado_a: asignado_a !== undefined ? asignado_a : actual.asignado_a,
+        equipo: equipo !== undefined ? equipo : actual.equipo,
+        origen: origen !== undefined ? origen : actual.origen,
+        causa: causa !== undefined ? causa : actual.causa,
+        solucion: solucion !== undefined ? solucion : actual.solucion,
         fecha_actualizacion: new Date().toISOString(),
 
         // Si cambia la prioridad, recalculamos el SLA
@@ -299,21 +333,34 @@ const revisarSugerencia = (req, res) => {
         return res.status(404).json({ error: `No hay sugerencia de IA para la incidencia ${id}.` });
     }
 
-    sugerencias[indice].aceptada       = aceptada;
+    sugerencias[indice].aceptada = aceptada;
     sugerencias[indice].motivo_rechazo = motivo_rechazo || null;
 
+    if (aceptada) {
+        const incIndice = incidencias.findIndex(inc => inc.id === id);
+        if (incIndice !== -1) {
+            const sug = sugerencias[indice];
+            incidencias[incIndice].categoria = sug.categoria_sugerida;
+            incidencias[incIndice].prioridad = sug.prioridad_sugerida;
+            incidencias[incIndice].descripcion = sug.descripcion_mejorada;
+            incidencias[incIndice].fecha_actualizacion = new Date().toISOString();
+        }
+    }
+
     res.json({
-        mensaje:    aceptada ? 'Sugerencia aceptada y aplicada.' : 'Sugerencia rechazada.',
+        mensaje: aceptada ? 'Sugerencia aceptada y aplicada.' : 'Sugerencia rechazada.',
         sugerencia: sugerencias[indice]
     });
+
 };
 
-module.exports = { 
-    obtenerTodas, 
-    obtenerPorId, 
-    crear, 
-    actualizar, 
-    eliminar, 
-    obtenerSugerencia, 
-    revisarSugerencia 
+module.exports = {
+    obtenerTodas,
+    obtenerPorId,
+    crear,
+    actualizar,
+    eliminar,
+    obtenerSugerencia,
+    revisarSugerencia,
+    sugerencias
 };

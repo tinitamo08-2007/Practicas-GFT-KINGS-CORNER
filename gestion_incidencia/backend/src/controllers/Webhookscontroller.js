@@ -4,8 +4,9 @@
 //          y llama a la IA al recibir un ticket nuevo de Jira
 // ============================================================
 
+const { sugerencias } = require('../controllers/incidenciasController');
 const incidencias = require('../db/Mockincidencias');
-const { analizarIncidencia }   = require('../services/Iaservice');
+const { analizarIncidencia } = require('../services/Iaservice');
 const { actualizarEstadoEnJira, anadirComentarioEnJira } = require('../services/Jiraservice');
 
 let proximoIdWebhook = 101;
@@ -22,11 +23,11 @@ const recibirEventoJira = async (req, res) => {
         console.log('Evento recibido de Jira:', payload?.webhookEvent || 'sin tipo');
 
         // Extraemos los datos del formato de Jira
-        const jiraId      = payload?.issue?.key                    || null;
-        const titulo      = payload?.issue?.fields?.summary        || 'Sin titulo';
+        const jiraId = payload?.issue?.key || null;
+        const titulo = payload?.issue?.fields?.summary || 'Sin titulo';
         const descripcion = payload?.issue?.fields?.description?.content?.[0]?.content?.[0]?.text || '';
-        const prioridad   = payload?.issue?.fields?.priority?.name || 'Media';
-        const estado      = payload?.issue?.fields?.status?.name   || 'Nueva';
+        const prioridad = payload?.issue?.fields?.priority?.name || 'Media';
+        const estado = payload?.issue?.fields?.status?.name || 'Nueva';
 
         // Comprobamos si ya tenemos esta incidencia
         const indiceExistente = incidencias.findIndex(inc => inc.jira_id === jiraId);
@@ -46,26 +47,26 @@ const recibirEventoJira = async (req, res) => {
         }
 
         // No existe: la creamos nueva
-        const ahora  = new Date().toISOString();
+        const ahora = new Date().toISOString();
         const nuevaId = proximoIdWebhook;
 
         const nueva = {
-            id:                  nuevaId,
-            codigo:              `INC-${new Date().getFullYear()}-${String(nuevaId).padStart(6, '0')}`,
-            jira_id:             jiraId,
+            id: nuevaId,
+            codigo: `INC-${new Date().getFullYear()}-${String(nuevaId).padStart(6, '0')}`,
+            jira_id: jiraId,
             titulo, descripcion, estado, prioridad,
-            categoria:           null,
-            reportado_por:       payload?.issue?.fields?.reporter?.displayName || null,
-            asignado_a:          payload?.issue?.fields?.assignee?.displayName || null,
-            equipo:              null,
-            origen:              'Web',
-            causa:               null,
-            solucion:            null,
-            fecha_creacion:      ahora,
+            categoria: null,
+            reportado_por: payload?.issue?.fields?.reporter?.displayName || null,
+            asignado_a: payload?.issue?.fields?.assignee?.displayName || null,
+            equipo: null,
+            origen: 'Web',
+            causa: null,
+            solucion: null,
+            fecha_creacion: ahora,
             fecha_actualizacion: ahora,
-            fecha_cierre:        null,
-            sla_vencimiento:     null,
-            ia_procesada:        false
+            fecha_cierre: null,
+            sla_vencimiento: null,
+            ia_procesada: false
         };
 
         incidencias.push(nueva);
@@ -75,8 +76,20 @@ const recibirEventoJira = async (req, res) => {
         analizarIncidencia(nueva)
             .then(analisis => {
                 if (analisis) {
+                    sugerencias.push({
+                        incidencia_id: nueva.id,
+                        categoria_sugerida: analisis.categoria_sugerida,
+                        prioridad_sugerida: analisis.prioridad_sugerida,
+                        tiempo_sugerido: analisis.tiempo_sugerido,
+                        descripcion_mejorada: analisis.descripcion_mejorada,
+                        pasos_resolucion: analisis.pasos_resolucion,
+                        aceptada: null,
+                        motivo_rechazo: null,
+                        creada_en: new Date().toISOString()
+                    });
+                    const indice = incidencias.findIndex(inc => inc.id === nueva.id);
+                    if (indice !== -1) incidencias[indice].ia_procesada = true;
                     console.log(`IA proceso incidencia de Jira ${jiraId}`);
-                    // Aqui guardaremos la sugerencia cuando tengamos BD
                 }
             })
             .catch(err => console.error('Error en IA para webhook:', err.message));
