@@ -3,8 +3,6 @@
 //
 // Groq es un proveedor gratuito de IA. Funciona igual que
 // OpenAI pero usando sus propios modelos (Llama, Gemma).
-// La API key la tienes en el .env como IA_API_KEY.
-// El modelo lo tienes en el .env como IA_MODELO.
 //
 // Flujo del archivo:
 //   1. Recibe una incidencia (titulo, descripcion, etc.)

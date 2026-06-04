@@ -1,205 +1,206 @@
 // ============================================================
+// ARCHIVO: src/controllers/incidenciasController.js
 // FUNCION: Logica de cada operacion sobre las incidencias.
-//          Ahora trabaja con el array en memoria en lugar de
-//          la base de datos. Cuando tengamos PostgreSQL, solo
-//          hay que cambiar este archivo.
-//CAMBIOS RESPECTO A LA VERSION ANTERIOR:
-//   - Al crear una incidencia, se llama a la IA automaticamente
-//   - Las sugerencias de la IA se guardan en el array "sugerencias"
-//   - Se anade endpoint para ver la sugerencia de una incidencia
+//          Version con PostgreSQL: usa pool.query() para todas
+//          las operaciones en lugar del array en memoria.
+//
+// IMPORTANTE: el esquema real de la BD tiene estos campos NOT NULL
+// (no pueden estar vacios): titulo, descripcion, estado, prioridad,
+// categoria, reportado_por, origen, sla_vencimiento.
+// Por eso usamos valores por defecto cuando algo no llega.
 // ============================================================
 
-// Importamos los datos de prueba
-const incidencias = require('../db/Mockincidencias');
+const pool                   = require('../db/pool');
 const { analizarIncidencia } = require('../services/Iaservice');
 
-// Contador para los IDs nuevos que se vayan creando
-// Empieza en 51 porque el mock ya tiene del 1 al 50
-let proximoId = 51;
-
-// Array separado para guardar las sugerencias de la IA
-// Cuando haya BD, esto pasara a la tabla sugerencias_ia
-const sugerencias = [];
+// Valores permitidos para validar antes de guardar en la BD
+const ESTADOS_VALIDOS     = ['Nueva', 'Asignada', 'En progreso', 'Pendiente', 'Resuelta', 'Cerrada', 'Cancelada'];
+const PRIORIDADES_VALIDAS = ['Critica', 'Alta', 'Media', 'Baja'];
+const ORIGENES_VALIDOS    = ['Email', 'Web', 'Telefono'];
 
 
-// ----------------------------------------------------------
-// calcularSLA:
-// Recibe la prioridad y devuelve la fecha limite de resolucion
-// ----------------------------------------------------------
+// ── Funciones auxiliares ──────────────────────────────────────
+
+// calcularSLA: devuelve la fecha limite segun la prioridad
 const calcularSLA = (prioridad) => {
-    const horas = {
-        'Critica': 4,
-        'Alta': 24,
-        'Media': 48,
-        'Baja': 72
-    };
-
+    const horas = { 'Critica': 4, 'Alta': 24, 'Media': 48, 'Baja': 72 };
     const horasLimite = horas[prioridad] || 48;
-    const ahora = new Date();
-    const vencimiento = new Date(ahora.getTime() + horasLimite * 60 * 60 * 1000);
-
-    return vencimiento.toISOString();
+    return new Date(Date.now() + horasLimite * 60 * 60 * 1000).toISOString();
 };
 
-// ----------------------------------------------------------
-//  generarCodigo
-// Genera el codigo visible.
-// ----------------------------------------------------------
+// generarCodigo: convierte el ID numerico en codigo legible
+// Ejemplo: id=51 -> "INC-2026-000051"
 const generarCodigo = (id) => {
-    const anio = new Date().getFullYear();
+    const anio   = new Date().getFullYear();
     const numero = String(id).padStart(6, '0');
     return `INC-${anio}-${numero}`;
 };
 
 
-// Valores permitidos para validaciones
-const ESTADOS_VALIDOS = ['Nueva', 'Asignada', 'En progreso', 'Pendiente', 'Resuelta', 'Cerrada', 'Cancelada'];
-const PRIORIDADES_VALIDAS = ['Critica', 'Alta', 'Media', 'Baja'];
-const ORIGENES_VALIDOS = ['Email', 'Web', 'Telefono'];
-
-
 // ============================================================
 // GET /api/incidencias
-// Devuelve todas las incidencias
+// Devuelve todas las incidencias ordenadas por fecha
 // ============================================================
-const obtenerTodas = (req, res) => {
-    // Devolvemos una copia del array ordenada por fecha de creacion descendente
-    const ordenadas = [...incidencias].sort((a, b) => {
-        return new Date(b.fecha_creacion) - new Date(a.fecha_creacion);
-    });
-
-    res.json(ordenadas);
+const obtenerTodas = async (req, res) => {
+    try {
+        // pool.query devuelve { rows: [...] } con todos los resultados
+        const { rows } = await pool.query(
+            'SELECT * FROM incidencias ORDER BY fecha_creacion DESC'
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('Error al obtener incidencias:', err.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
 };
+
 
 // ============================================================
 // GET /api/incidencias/:id
-// Devuelve una incidencia por su ID
+// Devuelve una incidencia con su sugerencia de IA si existe
 // ============================================================
-const obtenerPorId = (req, res) => {
-    // Convertimos a numero porque req.params.id llega como string
-    const id = parseInt(req.params.id);
+const obtenerPorId = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
 
-    // Array.find() busca el primer elemento que cumpla la condicion
-    const incidencia = incidencias.find(inc => inc.id === id);
+        const { rows: encontradas } = await pool.query(
+            'SELECT * FROM incidencias WHERE id = $1', [id]
+        );
 
-    if (!incidencia) {
-        return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
+        // Si el array esta vacio, la incidencia no existe
+        if (encontradas.length === 0) {
+            return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
+        }
+
+        // Buscamos la sugerencia de IA para esta incidencia
+        const { rows: sugerencias } = await pool.query(
+            'SELECT * FROM sugerencias_ia WHERE incidencia_id = $1', [id]
+        );
+
+        // Devolvemos la incidencia con el campo sugerencia_ia incluido
+        res.json({ ...encontradas[0], sugerencia_ia: sugerencias[0] || null });
+
+    } catch (err) {
+        console.error('Error al obtener incidencia:', err.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
     }
-    // Incluimos la sugerencia de IA si existe
-    const sugerencia = sugerencias.find(s => s.incidencia_id === id) || null;
-
-    res.json({ ...incidencia, sugerencia_ia: sugerencia });
 };
 
 
 // ============================================================
 // POST /api/incidencias
-// Crea una incidencia nueva y la anade al array
+// Crea una incidencia nueva y lanza el analisis de IA en segundo plano
 // ============================================================
-const crear = (req, res) => {
-    const {
-        titulo,
-        descripcion,
-        prioridad = 'Media',
-        categoria,
-        estado = 'Nueva',
-        reportado_por,
-        asignado_a,
-        equipo,
-        origen,
-        causa,
-        solucion,
-        jira_id
-    } = req.body;
+const crear = async (req, res) => {
+    try {
+        const {
+            titulo,
+            descripcion,
+            prioridad    = 'Media',
+            categoria,
+            estado       = 'Nueva',
+            reportado_por,
+            asignado_a,
+            equipo,
+            origen,
+            causa,
+            solucion,
+            jira_id
+        } = req.body;
 
-    // Validacion: titulo obligatorio
-    if (!titulo) {
-        return res.status(400).json({ error: 'El campo titulo es obligatorio.' });
-    }
+        // Validaciones
+        if (!titulo) {
+            return res.status(400).json({ error: 'El campo titulo es obligatorio.' });
+        }
+        if (!PRIORIDADES_VALIDAS.includes(prioridad)) {
+            return res.status(400).json({ error: `Prioridad no valida. Valores aceptados: ${PRIORIDADES_VALIDAS.join(', ')}` });
+        }
+        if (!ESTADOS_VALIDOS.includes(estado)) {
+            return res.status(400).json({ error: `Estado no valido. Valores aceptados: ${ESTADOS_VALIDOS.join(', ')}` });
+        }
+        if (origen && !ORIGENES_VALIDOS.includes(origen)) {
+            return res.status(400).json({ error: `Origen no valido. Valores aceptados: ${ORIGENES_VALIDOS.join(', ')}` });
+        }
 
-    // Validaciones de valores permitidos
-    if (!PRIORIDADES_VALIDAS.includes(prioridad)) {
-        return res.status(400).json({
-            error: `Prioridad no valida. Valores aceptados: ${PRIORIDADES_VALIDAS.join(', ')}`
-        });
-    }
+        // RETURNING * devuelve la fila recien insertada incluyendo el id generado por SERIAL
+        // Los campos NOT NULL que pueden llegar vacios los rellenamos con valores por defecto
+        const { rows } = await pool.query(
+            `INSERT INTO incidencias
+                (titulo, descripcion, prioridad, categoria, estado,
+                 reportado_por, asignado_a, equipo, origen,
+                 causa, solucion, jira_id, sla_vencimiento)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+             RETURNING *`,
+            [
+                titulo,
+                descripcion   || 'Sin descripcion',     // NOT NULL en la BD
+                prioridad,
+                categoria     || 'Sin clasificar',       // NOT NULL en la BD
+                estado,
+                reportado_por || 'Desconocido',          // NOT NULL en la BD
+                asignado_a    || null,
+                equipo        || null,
+                origen        || 'Web',                  // NOT NULL en la BD
+                causa         || null,
+                solucion      || null,
+                jira_id       || null,
+                calcularSLA(prioridad)                   // NOT NULL en la BD
+            ]
+        );
 
-    if (!ESTADOS_VALIDOS.includes(estado)) {
-        return res.status(400).json({
-            error: `Estado no valido. Valores aceptados: ${ESTADOS_VALIDOS.join(', ')}`
-        });
-    }
+        const nueva = rows[0];
 
-    if (origen && !ORIGENES_VALIDOS.includes(origen)) {
-        return res.status(400).json({
-            error: `Origen no valido. Valores aceptados: ${ORIGENES_VALIDOS.join(', ')}`
-        });
-    }
+        // Generamos el codigo legible con el ID que PostgreSQL asigno
+        const codigo = generarCodigo(nueva.id);
+        await pool.query('UPDATE incidencias SET codigo = $1 WHERE id = $2', [codigo, nueva.id]);
+        nueva.codigo = codigo;
 
-    const ahora = new Date().toISOString();
+        // Respondemos al cliente de inmediato sin esperar a la IA
+        res.status(201).json(nueva);
 
-    // Construimos el objeto nuevo con todos los campos del modelo
-    const nueva = {
-        id: proximoId,
-        codigo: generarCodigo(proximoId),
-        jira_id: jira_id || null,
-        titulo,
-        descripcion: descripcion || null,
-        estado,
-        prioridad,
-        categoria: categoria || null,
-        reportado_por: reportado_por || null,
-        asignado_a: asignado_a || null,
-        equipo: equipo || null,
-        origen: origen || null,
-        causa: causa || null,
-        solucion: solucion || null,
-        fecha_creacion: ahora,
-        fecha_actualizacion: ahora,
-        fecha_cierre: null,
-        sla_vencimiento: calcularSLA(prioridad),
-        ia_procesada: false  // indica si la IA ya analizo esta incidencia
-    };
+        // Llamamos a la IA en segundo plano.
+        // No usamos "await" aqui para que el cliente ya tenga su respuesta
+        // mientras la IA trabaja. Cuando termina, guardamos el resultado en la BD.
+        analizarIncidencia(nueva)
+            .then(async (analisis) => {
+                if (!analisis) return;
 
-    // Anyadimos al array y aumentamos el contador de IDs
-    incidencias.push(nueva);
-
-
-    analizarIncidencia(nueva)
-        .then(analisis => {
-            if (analisis) {
-                sugerencias.push({
-                    incidencia_id: nueva.id,
-                    categoria_sugerida: analisis.categoria_sugerida,
-                    prioridad_sugerida: analisis.prioridad_sugerida,
-                    tiempo_sugerido: analisis.tiempo_sugerido,
-                    descripcion_mejorada: analisis.descripcion_mejorada,
-                    pasos_resolucion: analisis.pasos_resolucion,
-                    causa_probable: analisis.causa_probable || null,
-                    subcategoria: analisis.subcategoria || null,
-                    impacto: analisis.impacto || null,
-                    escalado_recomendado: analisis.escalado_recomendado || false,
-                    nivel_escalado: analisis.nivel_escalado || null,
-                    etiquetas: analisis.etiquetas || [],
-                    aceptada: null,
-                    motivo_rechazo: null,
-                    creada_en: new Date().toISOString()
-                });
-
-                const indice = incidencias.findIndex(inc => inc.id === nueva.id);
-                if (indice !== -1) {
-                    incidencias[indice].ia_procesada = true;
+                try {
+                    // Guardamos el analisis en la tabla sugerencias_ia
+                    // etiquetas es TEXT[] en la BD, pasamos el array de JS directamente
+                    await pool.query(
+                        `INSERT INTO sugerencias_ia
+                            (incidencia_id, categoria_sugerida, prioridad_sugerida,
+                             tiempo_sugerido, descripcion_mejorada, pasos_resolucion,
+                             causa_probable, subcategoria, impacto,
+                             escalado_recomendado, nivel_escalado, etiquetas)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+                        [
+                            nueva.id,
+                            analisis.categoria_sugerida   || 'Sin clasificar',
+                            analisis.prioridad_sugerida   || 'Media',
+                            analisis.tiempo_sugerido      || 'Sin estimar',
+                            analisis.descripcion_mejorada || nueva.descripcion,
+                            analisis.pasos_resolucion     || 'Sin pasos sugeridos',
+                            analisis.causa_probable       || null,
+                            analisis.subcategoria         || null,
+                            analisis.impacto              || null,
+                            analisis.escalado_recomendado ?? false,
+                            analisis.nivel_escalado       || null,
+                            analisis.etiquetas            || []   // array vacio si no hay etiquetas
+                        ]
+                    );
+                    console.log(`IA: sugerencia guardada para ${nueva.codigo}`);
+                } catch (errGuardado) {
+                    console.error('Error guardando sugerencia de IA en BD:', errGuardado.message);
                 }
+            })
+            .catch(err => console.error('Error inesperado en el proceso de IA:', err.message));
 
-                console.log(`IA: sugerencia guardada para ${nueva.codigo}`);
-            }
-        })
-        .catch(err => {
-            console.error('Error inesperado en el proceso de IA:', err.message);
-        });
-    proximoId++;
-
-    res.status(201).json(nueva);
+    } catch (err) {
+        console.error('Error al crear incidencia:', err.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
 };
 
 
@@ -207,111 +208,165 @@ const crear = (req, res) => {
 // PUT /api/incidencias/:id
 // Actualiza los campos que lleguen en el body
 // ============================================================
-const actualizar = (req, res) => {
-    const id = parseInt(req.params.id);
+const actualizar = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
 
-    // findIndex devuelve la posicion del elemento en el array, o -1 si no existe
-    const indice = incidencias.findIndex(inc => inc.id === id);
+        // Primero obtenemos el estado actual de la incidencia
+        const { rows: existentes } = await pool.query(
+            'SELECT * FROM incidencias WHERE id = $1', [id]
+        );
 
-    if (indice === -1) {
-        return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
-    }
+        if (existentes.length === 0) {
+            return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
+        }
 
-    const {
-        titulo, descripcion, estado, prioridad,
-        categoria, reportado_por, asignado_a,
-        equipo, origen, causa, solucion
-    } = req.body;
+        const actual = existentes[0];
+        const body   = req.body;
 
-    // Validaciones si mandan esos campos
-    if (estado && !ESTADOS_VALIDOS.includes(estado)) {
-        return res.status(400).json({
-            error: `Estado no valido. Valores aceptados: ${ESTADOS_VALIDOS.join(', ')}`
-        });
-    }
+        // Validaciones solo si esos campos llegan en el body
+        if (body.estado && !ESTADOS_VALIDOS.includes(body.estado)) {
+            return res.status(400).json({ error: `Estado no valido. Valores aceptados: ${ESTADOS_VALIDOS.join(', ')}` });
+        }
+        if (body.prioridad && !PRIORIDADES_VALIDAS.includes(body.prioridad)) {
+            return res.status(400).json({ error: `Prioridad no valida. Valores aceptados: ${PRIORIDADES_VALIDAS.join(', ')}` });
+        }
 
-    if (prioridad && !PRIORIDADES_VALIDAS.includes(prioridad)) {
-        return res.status(400).json({
-            error: `Prioridad no valida. Valores aceptados: ${PRIORIDADES_VALIDAS.join(', ')}`
-        });
-    }
+        // Si el campo llega en el body lo usamos, si no mantenemos el valor actual
+        // Usamos !== undefined para los campos que pueden ser string vacio o null
+        const titulo        = body.titulo        || actual.titulo;
+        const descripcion   = body.descripcion   !== undefined ? body.descripcion   : actual.descripcion;
+        const estado        = body.estado        || actual.estado;
+        const prioridad     = body.prioridad     || actual.prioridad;
+        const categoria     = body.categoria     !== undefined ? body.categoria     : actual.categoria;
+        const reportado_por = body.reportado_por !== undefined ? body.reportado_por : actual.reportado_por;
+        const asignado_a    = body.asignado_a    !== undefined ? body.asignado_a    : actual.asignado_a;
+        const equipo        = body.equipo        !== undefined ? body.equipo        : actual.equipo;
+        const origen        = body.origen        !== undefined ? body.origen        : actual.origen;
+        const causa         = body.causa         !== undefined ? body.causa         : actual.causa;
+        const solucion      = body.solucion      !== undefined ? body.solucion      : actual.solucion;
 
-    // Tomamos la incidencia actual y le aplicamos los cambios
-    // El operador ... (spread) copia todos los campos existentes
-    const actual = incidencias[indice];
+        // Si cambia la prioridad recalculamos el SLA
+        const sla_vencimiento = body.prioridad ? calcularSLA(body.prioridad) : actual.sla_vencimiento;
 
-    // Solo actualizamos los campos que llegaron (si llega undefined, mantenemos el valor actual)
-    const actualizada = {
-        ...actual,
-        titulo: titulo || actual.titulo,
-        descripcion: descripcion !== undefined ? descripcion : actual.descripcion,
-        estado: estado || actual.estado,
-        prioridad: prioridad || actual.prioridad,
-        categoria: categoria !== undefined ? categoria : actual.categoria,
-        reportado_por: reportado_por !== undefined ? reportado_por : actual.reportado_por,
-        asignado_a: asignado_a !== undefined ? asignado_a : actual.asignado_a,
-        equipo: equipo !== undefined ? equipo : actual.equipo,
-        origen: origen !== undefined ? origen : actual.origen,
-        causa: causa !== undefined ? causa : actual.causa,
-        solucion: solucion !== undefined ? solucion : actual.solucion,
-        fecha_actualizacion: new Date().toISOString(),
-
-        // Si cambia la prioridad, recalculamos el SLA
-        sla_vencimiento: prioridad ? calcularSLA(prioridad) : actual.sla_vencimiento,
-
-        // Si el estado pasa a Cerrada o Resuelta, guardamos la fecha de cierre
-        fecha_cierre: (estado === 'Cerrada' || estado === 'Resuelta')
+        // Si el estado pasa a Cerrada o Resuelta por primera vez, guardamos la fecha
+        const fecha_cierre = (estado === 'Cerrada' || estado === 'Resuelta') && !actual.fecha_cierre
             ? new Date().toISOString()
-            : actual.fecha_cierre
-    };
+            : actual.fecha_cierre;
 
-    // Reemplazamos el elemento en el array
-    incidencias[indice] = actualizada;
+        const { rows } = await pool.query(
+            `UPDATE incidencias SET
+                titulo              = $1,
+                descripcion         = $2,
+                estado              = $3,
+                prioridad           = $4,
+                categoria           = $5,
+                reportado_por       = $6,
+                asignado_a          = $7,
+                equipo              = $8,
+                origen              = $9,
+                causa               = $10,
+                solucion            = $11,
+                sla_vencimiento     = $12,
+                fecha_cierre        = $13,
+                fecha_actualizacion = NOW()
+             WHERE id = $14
+             RETURNING *`,
+            [titulo, descripcion, estado, prioridad, categoria,
+             reportado_por, asignado_a, equipo, origen, causa, solucion,
+             sla_vencimiento, fecha_cierre, id]
+        );
 
-    res.json(actualizada);
+        // Si el tecnico acepta la sugerencia, aplicamos los campos sugeridos
+        if (body.aceptar_sugerencia === true) {
+            const { rows: sugerencias } = await pool.query(
+                'SELECT * FROM sugerencias_ia WHERE incidencia_id = $1', [id]
+            );
+            if (sugerencias.length > 0) {
+                const sug = sugerencias[0];
+                await pool.query(
+                    `UPDATE incidencias SET
+                        categoria   = $1,
+                        prioridad   = $2,
+                        descripcion = $3,
+                        fecha_actualizacion = NOW()
+                     WHERE id = $4`,
+                    [sug.categoria_sugerida, sug.prioridad_sugerida, sug.descripcion_mejorada, id]
+                );
+                await pool.query(
+                    'UPDATE sugerencias_ia SET aceptada = true WHERE incidencia_id = $1', [id]
+                );
+            }
+        }
+
+        res.json(rows[0]);
+
+    } catch (err) {
+        console.error('Error al actualizar incidencia:', err.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
 };
 
 
 // ============================================================
 // DELETE /api/incidencias/:id
-// Elimina una incidencia del array
+// Elimina una incidencia de la BD
 // ============================================================
-const eliminar = (req, res) => {
-    const id = parseInt(req.params.id);
-    const indice = incidencias.findIndex(inc => inc.id === id);
+const eliminar = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
 
-    if (indice === -1) {
-        return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
+        // RETURNING nos devuelve el codigo para mostrarlo en el mensaje
+        const { rows } = await pool.query(
+            'DELETE FROM incidencias WHERE id = $1 RETURNING codigo', [id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
+        }
+
+        res.json({ mensaje: `Incidencia ${rows[0].codigo} eliminada correctamente.` });
+
+    } catch (err) {
+        console.error('Error al eliminar incidencia:', err.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
     }
-
-    // splice(indice, 1) elimina 1 elemento en esa posicion
-    const eliminada = incidencias.splice(indice, 1)[0];
-
-    res.json({ mensaje: `Incidencia ${eliminada.codigo} eliminada correctamente.` });
 };
+
 
 // ============================================================
 // GET /api/incidencias/:id/sugerencia
 // Consulta si la IA ya genero la sugerencia para esta incidencia
 // ============================================================
-const obtenerSugerencia = (req, res) => {
-    const id = parseInt(req.params.id);
-    const incidencia = incidencias.find(inc => inc.id === id);
+const obtenerSugerencia = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
 
-    if (!incidencia) {
-        return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
+        // Comprobamos que la incidencia existe
+        const { rows: inc } = await pool.query(
+            'SELECT id FROM incidencias WHERE id = $1', [id]
+        );
+        if (inc.length === 0) {
+            return res.status(404).json({ error: `No existe una incidencia con id ${id}.` });
+        }
+
+        const { rows: sugerencias } = await pool.query(
+            'SELECT * FROM sugerencias_ia WHERE incidencia_id = $1', [id]
+        );
+
+        if (sugerencias.length === 0) {
+            return res.json({
+                procesada: false,
+                mensaje: 'La IA todavia no ha generado una sugerencia para esta incidencia.'
+            });
+        }
+
+        res.json({ procesada: true, sugerencia: sugerencias[0] });
+
+    } catch (err) {
+        console.error('Error al obtener sugerencia:', err.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
     }
-
-    const sugerencia = sugerencias.find(s => s.incidencia_id === id);
-
-    if (!sugerencia) {
-        return res.json({
-            procesada: false,
-            mensaje: 'La IA aun no ha generado una sugerencia para esta incidencia.'
-        });
-    }
-
-    res.json({ procesada: true, sugerencia });
 };
 
 
@@ -319,40 +374,52 @@ const obtenerSugerencia = (req, res) => {
 // PATCH /api/incidencias/:id/sugerencia
 // El tecnico acepta o rechaza la sugerencia de la IA
 // ============================================================
-const revisarSugerencia = (req, res) => {
-    const id = parseInt(req.params.id);
-    const { aceptada, motivo_rechazo } = req.body;
+const revisarSugerencia = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { aceptada, motivo_rechazo } = req.body;
 
-    if (aceptada === undefined) {
-        return res.status(400).json({ error: 'Debes indicar si la sugerencia fue aceptada (true o false).' });
-    }
-
-    const indice = sugerencias.findIndex(s => s.incidencia_id === id);
-
-    if (indice === -1) {
-        return res.status(404).json({ error: `No hay sugerencia de IA para la incidencia ${id}.` });
-    }
-
-    sugerencias[indice].aceptada = aceptada;
-    sugerencias[indice].motivo_rechazo = motivo_rechazo || null;
-
-    if (aceptada) {
-        const incIndice = incidencias.findIndex(inc => inc.id === id);
-        if (incIndice !== -1) {
-            const sug = sugerencias[indice];
-            incidencias[incIndice].categoria = sug.categoria_sugerida;
-            incidencias[incIndice].prioridad = sug.prioridad_sugerida;
-            incidencias[incIndice].descripcion = sug.descripcion_mejorada;
-            incidencias[incIndice].fecha_actualizacion = new Date().toISOString();
+        if (aceptada === undefined) {
+            return res.status(400).json({ error: 'Debes indicar si la sugerencia fue aceptada (true o false).' });
         }
+
+        const { rows } = await pool.query(
+            `UPDATE sugerencias_ia
+             SET aceptada = $1, motivo_rechazo = $2
+             WHERE incidencia_id = $3
+             RETURNING *`,
+            [aceptada, motivo_rechazo || null, id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: `No hay sugerencia de IA para la incidencia ${id}.` });
+        }
+
+        // Si el tecnico acepta, aplicamos los campos sugeridos a la incidencia
+        if (aceptada) {
+            const sug = rows[0];
+            await pool.query(
+                `UPDATE incidencias SET
+                    categoria   = $1,
+                    prioridad   = $2,
+                    descripcion = $3,
+                    fecha_actualizacion = NOW()
+                 WHERE id = $4`,
+                [sug.categoria_sugerida, sug.prioridad_sugerida, sug.descripcion_mejorada, id]
+            );
+        }
+
+        res.json({
+            mensaje:    aceptada ? 'Sugerencia aceptada y aplicada.' : 'Sugerencia rechazada.',
+            sugerencia: rows[0]
+        });
+
+    } catch (err) {
+        console.error('Error al revisar sugerencia:', err.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
     }
-
-    res.json({
-        mensaje: aceptada ? 'Sugerencia aceptada y aplicada.' : 'Sugerencia rechazada.',
-        sugerencia: sugerencias[indice]
-    });
-
 };
+
 
 module.exports = {
     obtenerTodas,
@@ -361,6 +428,5 @@ module.exports = {
     actualizar,
     eliminar,
     obtenerSugerencia,
-    revisarSugerencia,
-    sugerencias
+    revisarSugerencia
 };

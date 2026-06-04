@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict jI2D7wY9e9LtsqZbnzoIGDJpOJbhyC4m0lz1zh8vcS3JlzsrGXbLjnU7nfOkUVK
+
 
 -- Dumped from database version 15.18 (Debian 15.18-1.pgdg13+1)
 -- Dumped by pg_dump version 15.18 (Debian 15.18-1.pgdg13+1)
@@ -176,5 +176,5 @@ ALTER TABLE public.sugerencias_ia ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict jI2D7wY9e9LtsqZbnzoIGDJpOJbhyC4m0lz1zh8vcS3JlzsrGXbLjnU7nfOkUVK
+
 

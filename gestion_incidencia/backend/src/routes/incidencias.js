@@ -3,6 +3,8 @@
 // CAMBIOS: Se añaden dos rutas nuevas para la sugerencia de IA
 // ============================================================
 
+// en este archivo solo conecta cada URL con su funcion del controller
+
 const express = require('express');
 const router  = express.Router();
 

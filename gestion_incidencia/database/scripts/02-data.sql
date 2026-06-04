@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict oYDu7kJExRJQPIhcHHlORti7i2vZxza3L98BVmosvl50h63ZhaKLcm5sO9iuqBB
+
 
 -- Dumped from database version 15.18 (Debian 15.18-1.pgdg13+1)
 -- Dumped by pg_dump version 15.18 (Debian 15.18-1.pgdg13+1)
@@ -52,5 +52,5 @@ SELECT pg_catalog.setval('public.sugerencias_ia_id_seq', 1, false);
 -- PostgreSQL database dump complete
 --
 
-\unrestrict oYDu7kJExRJQPIhcHHlORti7i2vZxza3L98BVmosvl50h63ZhaKLcm5sO9iuqBB
+
 
