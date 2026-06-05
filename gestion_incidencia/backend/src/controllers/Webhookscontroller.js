@@ -9,7 +9,6 @@ const { analizarIncidencia }                             = require('../services/
 const { actualizarEstadoEnJira, anadirComentarioEnJira } = require('../services/Jiraservice');
 
 // Mapa de prioridades de Jira a nuestro formato interno
-// Jira usa nombres en ingles, nosotros usamos los nombres en español
 const MAPA_PRIORIDAD_JIRA = {
     'Highest': 'Critica',
     'High':    'Alta',
@@ -18,10 +17,21 @@ const MAPA_PRIORIDAD_JIRA = {
     'Lowest':  'Baja'
 };
 
+// Espera N milisegundos — sirve para no superar el limite de Groq
+// Groq permite 30 peticiones/minuto en el tier gratuito
+const esperar = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 
 // ============================================================
 // POST /api/webhooks/jira
-// Jira llama a esta URL cuando crea o modifica un ticket
+// Jira llama a esta URL cuando crea o modifica un ticket.
+// Flujo:
+//   1. Extraemos los datos del payload de Jira
+//   2. Si ya existe en BD -> UPDATE y salimos (sin IA)
+//   3. Si es nueva -> esperamos 2s, llamamos a la IA
+//   4. Reservamos el ID y generamos el codigo ANTES del INSERT
+//   5. Transaccion atomica: INSERT incidencia + INSERT sugerencia
+//   6. COMMIT o ROLLBACK segun el resultado
 // ============================================================
 const recibirEventoJira = async (req, res) => {
     try {
@@ -29,24 +39,21 @@ const recibirEventoJira = async (req, res) => {
 
         console.log('Webhook: Evento recibido de Jira:', payload?.webhookEvent || 'sin tipo');
 
-        // Extraemos los datos del formato que usa Jira en su webhook
-        const jiraId      = payload?.issue?.key                                                    || null;
-        const titulo      = payload?.issue?.fields?.summary                                        || 'Sin titulo';
-        const descripcion = payload?.issue?.fields?.description?.content?.[0]?.content?.[0]?.text || 'Sin descripcion';
-        const prioridadJira = payload?.issue?.fields?.priority?.name                              || 'Medium';
-        const estado      = payload?.issue?.fields?.status?.name                                   || 'Nueva';
-
-        // Convertimos la prioridad de Jira a nuestra prioridad interna
-        const prioridad = MAPA_PRIORIDAD_JIRA[prioridadJira] || 'Media';
+        // Extraemos los datos del payload de Jira
+        const jiraId        = payload?.issue?.key                                                    || null;
+        const titulo        = payload?.issue?.fields?.summary                                        || 'Sin titulo';
+        const descripcion   = payload?.issue?.fields?.description?.content?.[0]?.content?.[0]?.text || 'Sin descripcion';
+        const prioridadJira = payload?.issue?.fields?.priority?.name                                || 'Medium';
+        const estado        = payload?.issue?.fields?.status?.name                                   || 'Nueva';
+        const prioridad     = MAPA_PRIORIDAD_JIRA[prioridadJira] || 'Media';
 
         // Comprobamos si ya tenemos esta incidencia en la BD
-        // La columna jira_id tiene UNIQUE en la BD, no pueden repetirse
         const { rows: existentes } = await pool.query(
             'SELECT * FROM incidencias WHERE jira_id = $1', [jiraId]
         );
 
         if (jiraId && existentes.length > 0) {
-            // Ya existe: actualizamos solo los campos que pueden cambiar en Jira
+            // Ya existe: solo actualizamos los campos que pueden cambiar en Jira
             await pool.query(
                 `UPDATE incidencias
                  SET titulo = $1, descripcion = $2, estado = $3, fecha_actualizacion = NOW()
@@ -57,79 +64,110 @@ const recibirEventoJira = async (req, res) => {
             return res.json({ mensaje: `Incidencia ${jiraId} actualizada.` });
         }
 
-        // No existe: la creamos en la BD
-        // Los campos NOT NULL que Jira no manda los rellenamos con valores por defecto
-        const { rows } = await pool.query(
-            `INSERT INTO incidencias
-                (titulo, descripcion, estado, prioridad, categoria,
-                 reportado_por, asignado_a, equipo, origen, jira_id, sla_vencimiento)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-             RETURNING *`,
-            [
-                titulo,
-                descripcion,
-                estado,
-                prioridad,
-                'Sin clasificar',   // la IA lo clasificara en segundo plano
-                payload?.issue?.fields?.reporter?.displayName || 'Jira',
-                payload?.issue?.fields?.assignee?.displayName || null,
-                null,
-                'Web',
-                jiraId,
-                // Calculamos el SLA segun la prioridad que vino de Jira
-                new Date(Date.now() + ({ 'Critica': 4, 'Alta': 24, 'Media': 48, 'Baja': 72 }[prioridad] || 48) * 3600000).toISOString()
-            ]
-        );
+        // ── Es nueva ──────────────────────────────────────────────
 
-        const nueva = rows[0];
+        // Delay de 4 segundos para respetar el limite de Groq (30 req/min)
+        await esperar(4000);
 
-        // Generamos y guardamos el codigo legible
-        const codigo = `INC-${new Date().getFullYear()}-${String(nueva.id).padStart(6, '0')}`;
-        await pool.query('UPDATE incidencias SET codigo = $1 WHERE id = $2', [codigo, nueva.id]);
-        nueva.codigo = codigo;
+        const datosParaIA = {
+            titulo,
+            descripcion,
+            categoria:     'Sin clasificar',
+            prioridad,
+            reportado_por: payload?.issue?.fields?.reporter?.displayName || 'Jira',
+            equipo:        null,
+            origen:        'Web'
+        };
 
-        // Lanzamos la IA en segundo plano, igual que en incidenciasController.crear
-        analizarIncidencia(nueva)
-            .then(async (analisis) => {
-                if (!analisis) return;
-                try {
-                    await pool.query(
-                        `INSERT INTO sugerencias_ia
-                            (incidencia_id, categoria_sugerida, prioridad_sugerida,
-                             tiempo_sugerido, descripcion_mejorada, pasos_resolucion,
-                             causa_probable, subcategoria, impacto,
-                             escalado_recomendado, nivel_escalado, etiquetas)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-                        [
-                            nueva.id,
-                            analisis.categoria_sugerida   || 'Sin clasificar',
-                            analisis.prioridad_sugerida   || 'Media',
-                            analisis.tiempo_sugerido      || 'Sin estimar',
-                            analisis.descripcion_mejorada || nueva.descripcion,
-                            analisis.pasos_resolucion     || 'Sin pasos sugeridos',
-                            analisis.causa_probable       || null,
-                            analisis.subcategoria         || null,
-                            analisis.impacto              || null,
-                            analisis.escalado_recomendado ?? false,
-                            analisis.nivel_escalado       || null,
-                            analisis.etiquetas            || []
-                        ]
-                    );
+        console.log(`Webhook: Analizando con IA el ticket Jira ${jiraId}...`);
+        const analisis = await analizarIncidencia(datosParaIA);
 
-                    // Actualizamos la categoria con lo que dijo la IA
-                    await pool.query(
-                        'UPDATE incidencias SET categoria = $1 WHERE id = $2',
-                        [analisis.categoria_sugerida || 'Sin clasificar', nueva.id]
-                    );
+        const categoriaFinal = analisis?.categoria_sugerida || 'Sin clasificar';
+        const slaMs          = { 'Critica': 4, 'Alta': 24, 'Media': 48, 'Baja': 72 }[prioridad] || 48;
+        const slaVencimiento = new Date(Date.now() + slaMs * 3600000).toISOString();
 
-                    console.log(`IA: Sugerencia guardada para incidencia de Jira ${jiraId}`);
-                } catch (errGuardado) {
-                    console.error('Error guardando sugerencia IA desde webhook:', errGuardado.message);
-                }
-            })
-            .catch(err => console.error('Error en IA para webhook:', err.message));
+        // ── Transaccion atomica ───────────────────────────────────
+        const cliente = await pool.connect();
 
-        res.status(201).json({ mensaje: 'Incidencia de Jira registrada.', incidencia: nueva });
+        try {
+            await cliente.query('BEGIN');
+
+            // Reservamos el ID antes del INSERT para poder generar
+            // el codigo legible dentro de la misma transaccion
+            // evitando el error NOT NULL en la columna "codigo"
+            const { rows: seqRows } = await cliente.query(
+                "SELECT nextval('public.incidencias_id_seq') AS id"
+            );
+            const nuevoId = seqRows[0].id;
+            const codigo  = `INC-${new Date().getFullYear()}-${String(nuevoId).padStart(6, '0')}`;
+
+            const { rows } = await cliente.query(
+                `INSERT INTO incidencias
+                    (id, codigo, titulo, descripcion, estado, prioridad, categoria,
+                     reportado_por, asignado_a, equipo, origen, jira_id, sla_vencimiento)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                 RETURNING *`,
+                [
+                    nuevoId,
+                    codigo,
+                    titulo,
+                    descripcion,
+                    estado,
+                    prioridad,
+                    categoriaFinal,
+                    payload?.issue?.fields?.reporter?.displayName || 'Jira',
+                    payload?.issue?.fields?.assignee?.displayName || null,
+                    null,
+                    'Web',
+                    jiraId,
+                    slaVencimiento
+                ]
+            );
+
+            const nueva = rows[0];
+
+            // INSERT sugerencia en la misma transaccion
+            const { rows: filasSugerencia } = await cliente.query(
+                `INSERT INTO sugerencias_ia
+                    (incidencia_id, categoria_sugerida, prioridad_sugerida,
+                     tiempo_sugerido, descripcion_mejorada, pasos_resolucion,
+                     causa_probable, subcategoria, impacto,
+                     escalado_recomendado, nivel_escalado, etiquetas)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                 RETURNING *`,
+                [
+                    nueva.id,
+                    analisis?.categoria_sugerida   || 'Sin clasificar',
+                    analisis?.prioridad_sugerida   || prioridad,
+                    analisis?.tiempo_sugerido      || 'Sin estimar',
+                    analisis?.descripcion_mejorada || descripcion,
+                    analisis?.pasos_resolucion     || 'Sin pasos sugeridos',
+                    analisis?.causa_probable       || null,
+                    analisis?.subcategoria         || null,
+                    analisis?.impacto              || null,
+                    analisis?.escalado_recomendado ?? false,
+                    analisis?.nivel_escalado       || null,
+                    analisis?.etiquetas            || []
+                ]
+            );
+
+            await cliente.query('COMMIT');
+
+            console.log(`Webhook: ${codigo} (Jira: ${jiraId}) guardada correctamente.`);
+
+            res.status(201).json({
+                mensaje:       'Incidencia de Jira registrada con analisis de IA.',
+                incidencia:    nueva,
+                sugerencia_ia: filasSugerencia[0]
+            });
+
+        } catch (errTransaccion) {
+            await cliente.query('ROLLBACK');
+            console.error('Webhook: ROLLBACK — error en la transaccion:', errTransaccion.message);
+            res.status(500).json({ error: 'Error al registrar la incidencia. La operacion fue revertida.' });
+        } finally {
+            cliente.release();
+        }
 
     } catch (err) {
         console.error('Error al procesar evento de Jira:', err.message);

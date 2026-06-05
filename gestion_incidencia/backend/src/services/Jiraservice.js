@@ -149,7 +149,7 @@ const actualizarEstadoEnJira = async (jiraId, nuevoEstado) => {
         const mapaEstados = {
             'En progreso': 'In Progress',
             'Resuelta':    'Done',
-            'Cerrada':     'Done',
+           // 'Cerrada':     'Done',
             'Cancelada':   'Cancelled'
         };
 

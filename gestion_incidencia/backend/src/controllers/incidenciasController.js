@@ -43,11 +43,55 @@ const generarCodigo = (id) => {
 // ============================================================
 const obtenerTodas = async (req, res) => {
     try {
-        // pool.query devuelve { rows: [...] } con todos los resultados
-        const { rows } = await pool.query(
-            'SELECT * FROM incidencias ORDER BY fecha_creacion DESC'
-        );
-        res.json(rows);
+        // LEFT JOIN con sugerencias_ia para devolver la sugerencia junto a cada incidencia.
+        // LEFT JOIN significa que si una incidencia no tiene sugerencia, igual aparece (con null).
+        const { rows } = await pool.query(`
+            SELECT
+                i.*,
+                s.categoria_sugerida,
+                s.prioridad_sugerida,
+                s.tiempo_sugerido,
+                s.descripcion_mejorada,
+                s.pasos_resolucion,
+                s.causa_probable,
+                s.subcategoria,
+                s.impacto,
+                s.escalado_recomendado,
+                s.nivel_escalado,
+                s.etiquetas,
+                s.aceptada,
+                s.motivo_rechazo,
+                s.creada_en AS sugerencia_creada_en,
+                s.id        AS sugerencia_id
+            FROM incidencias i
+            LEFT JOIN sugerencias_ia s ON s.incidencia_id = i.id
+            ORDER BY i.fecha_creacion DESC
+        `);
+
+        // Reorganizamos la respuesta para que sugerencia_ia sea un objeto anidado
+        const resultado = rows.map(row => {
+            const {
+                categoria_sugerida, prioridad_sugerida, tiempo_sugerido,
+                descripcion_mejorada, pasos_resolucion, causa_probable,
+                subcategoria, impacto, escalado_recomendado, nivel_escalado,
+                etiquetas, aceptada, motivo_rechazo, sugerencia_creada_en, sugerencia_id,
+                ...incidencia
+            } = row;
+
+            return {
+                ...incidencia,
+                sugerencia_ia: sugerencia_id ? {
+                    id: sugerencia_id,
+                    categoria_sugerida, prioridad_sugerida, tiempo_sugerido,
+                    descripcion_mejorada, pasos_resolucion, causa_probable,
+                    subcategoria, impacto, escalado_recomendado, nivel_escalado,
+                    etiquetas, aceptada, motivo_rechazo,
+                    creada_en: sugerencia_creada_en
+                } : null
+            };
+        });
+
+        res.json(resultado);
     } catch (err) {
         console.error('Error al obtener incidencias:', err.message);
         res.status(500).json({ error: 'Error interno del servidor.' });
@@ -89,7 +133,15 @@ const obtenerPorId = async (req, res) => {
 
 // ============================================================
 // POST /api/incidencias
-// Crea una incidencia nueva y lanza el analisis de IA en segundo plano
+// Flujo nuevo (atomico):
+//   1. Validamos los campos del body
+//   2. Llamamos a la IA y esperamos su respuesta
+//   3. Abrimos una transaccion en PostgreSQL
+//   4. INSERT incidencia (con la categoria que ya dio la IA)
+//   5. UPDATE codigo dentro de la misma transaccion
+//   6. INSERT sugerencia enlazada a la incidencia
+//   7. COMMIT: los dos registros quedan guardados a la vez
+//   8. Si cualquier paso falla -> ROLLBACK: nada queda a medias
 // ============================================================
 const crear = async (req, res) => {
     try {
@@ -108,7 +160,7 @@ const crear = async (req, res) => {
             jira_id
         } = req.body;
 
-        // Validaciones
+        // ── Validaciones ─────────────────────────────────────────
         if (!titulo) {
             return res.status(400).json({ error: 'El campo titulo es obligatorio.' });
         }
@@ -122,80 +174,118 @@ const crear = async (req, res) => {
             return res.status(400).json({ error: `Origen no valido. Valores aceptados: ${ORIGENES_VALIDOS.join(', ')}` });
         }
 
-        // RETURNING * devuelve la fila recien insertada incluyendo el id generado por SERIAL
-        // Los campos NOT NULL que pueden llegar vacios los rellenamos con valores por defecto
-        const { rows } = await pool.query(
-            `INSERT INTO incidencias
-                (titulo, descripcion, prioridad, categoria, estado,
-                 reportado_por, asignado_a, equipo, origen,
-                 causa, solucion, jira_id, sla_vencimiento)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-             RETURNING *`,
-            [
-                titulo,
-                descripcion   || 'Sin descripcion',     // NOT NULL en la BD
-                prioridad,
-                categoria     || 'Sin clasificar',       // NOT NULL en la BD
-                estado,
-                reportado_por || 'Desconocido',          // NOT NULL en la BD
-                asignado_a    || null,
-                equipo        || null,
-                origen        || 'Web',                  // NOT NULL en la BD
-                causa         || null,
-                solucion      || null,
-                jira_id       || null,
-                calcularSLA(prioridad)                   // NOT NULL en la BD
-            ]
-        );
+        // ── Paso 1: IA primero, BD despues ───────────────────────
+        // Construimos el objeto provisional que la IA necesita para analizar.
+        // Aun no tiene id ni codigo porque no existe en la BD todavia.
+        const datosParaIA = {
+            titulo,
+            descripcion:   descripcion   || 'Sin descripcion',
+            categoria:     categoria     || 'Sin clasificar',
+            prioridad,
+            reportado_por: reportado_por || 'Desconocido',
+            equipo:        equipo        || null,
+            origen:        origen        || 'Web'
+        };
 
-        const nueva = rows[0];
+        console.log(`crear: Analizando con IA la incidencia "${titulo}"...`);
+        const analisis = await analizarIncidencia(datosParaIA);
 
-        // Generamos el codigo legible con el ID que PostgreSQL asigno
-        const codigo = generarCodigo(nueva.id);
-        await pool.query('UPDATE incidencias SET codigo = $1 WHERE id = $2', [codigo, nueva.id]);
-        nueva.codigo = codigo;
+        // Si la IA falla usamos la categoria que mando el cliente como fallback.
+        // La incidencia siempre se guarda aunque la IA no responda.
+        const categoriaFinal = analisis?.categoria_sugerida || categoria || 'Sin clasificar';
 
-        // Respondemos al cliente de inmediato sin esperar a la IA
-        res.status(201).json(nueva);
+        // ── Paso 2: transaccion atomica en PostgreSQL ─────────────
+        // Usamos pool.connect() para obtener un cliente dedicado que permita
+        // BEGIN/COMMIT. Con pool.query() no es posible porque cada llamada
+        // puede usar una conexion diferente del pool.
+        const cliente = await pool.connect();
 
-        // Llamamos a la IA en segundo plano.
-        // No usamos "await" aqui para que el cliente ya tenga su respuesta
-        // mientras la IA trabaja. Cuando termina, guardamos el resultado en la BD.
-        analizarIncidencia(nueva)
-            .then(async (analisis) => {
-                if (!analisis) return;
+        try {
+            await cliente.query('BEGIN');
 
-                try {
-                    // Guardamos el analisis en la tabla sugerencias_ia
-                    // etiquetas es TEXT[] en la BD, pasamos el array de JS directamente
-                    await pool.query(
-                        `INSERT INTO sugerencias_ia
-                            (incidencia_id, categoria_sugerida, prioridad_sugerida,
-                             tiempo_sugerido, descripcion_mejorada, pasos_resolucion,
-                             causa_probable, subcategoria, impacto,
-                             escalado_recomendado, nivel_escalado, etiquetas)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-                        [
-                            nueva.id,
-                            analisis.categoria_sugerida   || 'Sin clasificar',
-                            analisis.prioridad_sugerida   || 'Media',
-                            analisis.tiempo_sugerido      || 'Sin estimar',
-                            analisis.descripcion_mejorada || nueva.descripcion,
-                            analisis.pasos_resolucion     || 'Sin pasos sugeridos',
-                            analisis.causa_probable       || null,
-                            analisis.subcategoria         || null,
-                            analisis.impacto              || null,
-                            analisis.escalado_recomendado ?? false,
-                            analisis.nivel_escalado       || null,
-                            analisis.etiquetas            || []   // array vacio si no hay etiquetas
-                        ]
-                    );
-                    console.log(`IA: sugerencia guardada para ${nueva.codigo}`);
-                } catch (errGuardado) {
-                    console.error('Error guardando sugerencia de IA en BD:', errGuardado.message);
-                }
-            })
-            .catch(err => console.error('Error inesperado en el proceso de IA:', err.message));
+            // INSERT incidencia con la categoria que ya vino de la IA
+            const { rows } = await cliente.query(
+                `INSERT INTO incidencias
+                    (titulo, descripcion, prioridad, categoria, estado,
+                     reportado_por, asignado_a, equipo, origen,
+                     causa, solucion, jira_id, sla_vencimiento)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                 RETURNING *`,
+                [
+                    titulo,
+                    descripcion   || 'Sin descripcion',
+                    prioridad,
+                    categoriaFinal,
+                    estado,
+                    reportado_por || 'Desconocido',
+                    asignado_a    || null,
+                    equipo        || null,
+                    origen        || 'Web',
+                    causa         || null,
+                    solucion      || null,
+                    jira_id       || null,
+                    calcularSLA(prioridad)
+                ]
+            );
+
+            const nueva = rows[0];
+
+            // UPDATE codigo dentro de la misma transaccion
+            const codigo = generarCodigo(nueva.id);
+            await cliente.query(
+                'UPDATE incidencias SET codigo = $1 WHERE id = $2',
+                [codigo, nueva.id]
+            );
+            nueva.codigo = codigo;
+
+            // INSERT sugerencia enlazada a esta incidencia.
+            // Si analisis es null (IA fallo) guardamos la fila con valores por defecto
+            // para que el frontend sepa que se intento pero no hubo resultado.
+            const { rows: filasSugerencia } = await cliente.query(
+                `INSERT INTO sugerencias_ia
+                    (incidencia_id, categoria_sugerida, prioridad_sugerida,
+                     tiempo_sugerido, descripcion_mejorada, pasos_resolucion,
+                     causa_probable, subcategoria, impacto,
+                     escalado_recomendado, nivel_escalado, etiquetas)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                 RETURNING *`,
+                [
+                    nueva.id,
+                    analisis?.categoria_sugerida   || 'Sin clasificar',
+                    analisis?.prioridad_sugerida   || prioridad,
+                    analisis?.tiempo_sugerido      || 'Sin estimar',
+                    analisis?.descripcion_mejorada || descripcion || 'Sin descripcion',
+                    analisis?.pasos_resolucion     || 'Sin pasos sugeridos',
+                    analisis?.causa_probable       || null,
+                    analisis?.subcategoria         || null,
+                    analisis?.impacto              || null,
+                    analisis?.escalado_recomendado ?? false,
+                    analisis?.nivel_escalado       || null,
+                    analisis?.etiquetas            || []
+                ]
+            );
+
+            // Todo correcto: los dos INSERT se confirman a la vez
+            await cliente.query('COMMIT');
+
+            console.log(`crear: ${codigo} guardada con sugerencia en una sola transaccion.`);
+
+            // Respondemos con la incidencia y la sugerencia juntas
+            res.status(201).json({
+                ...nueva,
+                sugerencia_ia: filasSugerencia[0]
+            });
+
+        } catch (errTransaccion) {
+            // Si cualquier INSERT fallo, deshacemos todo.
+            // Ningun dato queda a medias en la BD.
+            await cliente.query('ROLLBACK');
+            console.error('crear: ROLLBACK — error en la transaccion:', errTransaccion.message);
+            res.status(500).json({ error: 'Error al guardar la incidencia. La operacion fue revertida.' });
+        } finally {
+            // Siempre devolvemos el cliente al pool, haya error o no
+            cliente.release();
+        }
 
     } catch (err) {
         console.error('Error al crear incidencia:', err.message);
