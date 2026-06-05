@@ -1,0 +1,22 @@
+/.claude
+/openspec
+
+# Personal MCP config (each dev sets up locally)
+CLAUDE.md
+frontend/.vscode/mcp.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+*.swp
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Docker volumes / local data
+postgres-data/

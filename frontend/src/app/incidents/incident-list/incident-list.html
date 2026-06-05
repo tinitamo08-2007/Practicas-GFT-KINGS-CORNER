@@ -1,0 +1,97 @@
+<section class="incident-list">
+  <h1>Incidencias</h1>
+
+  <div class="incident-list__filters">
+    <input
+      #searchInput
+      type="search"
+      class="incident-list__search"
+      placeholder="Buscar por código o título…"
+      aria-label="Buscar por código o título"
+      [value]="searchTerm()"
+      (input)="searchTerm.set(searchInput.value)"
+    />
+
+    <select
+      #estadoSelect
+      class="incident-list__select"
+      aria-label="Filtrar por estado"
+      [value]="estadoFilter()"
+      (change)="setEstado(estadoSelect.value)"
+    >
+      <option value="">Estado: todos</option>
+      <option value="En progreso">En progreso</option>
+      <option value="Resuelta">Resuelta</option>
+      <option value="Cancelada">Cancelada</option>
+    </select>
+
+    <select
+      #prioridadSelect
+      class="incident-list__select"
+      aria-label="Filtrar por prioridad"
+      [value]="prioridadFilter()"
+      (change)="setPrioridad(prioridadSelect.value)"
+    >
+      <option value="">Prioridad: todas</option>
+      <option value="Critica">Crítica</option>
+      <option value="Alta">Alta</option>
+      <option value="Media">Media</option>
+      <option value="Baja">Baja</option>
+    </select>
+
+    <select
+      #equipoSelect
+      class="incident-list__select"
+      aria-label="Filtrar por equipo"
+      [value]="equipoFilter()"
+      (change)="equipoFilter.set(equipoSelect.value)"
+    >
+      <option value="">Equipo: todos</option>
+      <option [value]="SIN_ASIGNAR">Sin asignar</option>
+      @for (equipo of equipoOptions(); track equipo) {
+        <option [value]="equipo">{{ equipo }}</option>
+      }
+    </select>
+
+    <button type="button" class="incident-list__clear" (click)="clearFilters()">Limpiar</button>
+  </div>
+
+  <p class="incident-list__count">Mostrando {{ filtered().length }} de {{ incidents().length }}</p>
+
+  <div class="incident-list__table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Código</th>
+          <th scope="col">Título</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Prioridad</th>
+          <th scope="col">Equipo</th>
+          <th scope="col">Fecha de creación</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of filtered(); track row.id) {
+          <tr>
+            <td><span class="mono">{{ row.codigo }}</span></td>
+            <td>{{ row.titulo }}</td>
+            <td>
+              <span class="tag" [class]="estadoTagClass(row.estado)">{{ row.estado }}</span>
+            </td>
+            <td>
+              <span class="tag" [class]="prioridadTagClass(row.prioridad)">{{ row.prioridad }}</span>
+            </td>
+            <td>{{ row.equipo ?? '—' }}</td>
+            <td>{{ row.fechaCreacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</td>
+          </tr>
+        } @empty {
+          @if (incidents().length) {
+            <tr>
+              <td colspan="6" class="incident-list__empty">No hay incidencias que coincidan con los filtros.</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

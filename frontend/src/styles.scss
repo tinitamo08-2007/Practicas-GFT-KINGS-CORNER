@@ -1,0 +1,162 @@
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+  --color-red: #d20000;
+  --color-orange-500: #ff7f3c;
+  --color-warn: oklch(0.681 0.162 75.834);
+  --color-green: #00b427;
+  --color-primary-100: #b8d9fa;
+  --color-primary-700: #003879;
+  --color-gray-200: #d8dee4;
+  --color-gray-300: #b3b8bf;
+  --color-gray-700: #1c1e21;
+  --color-light-gray-100: #f3f5f6;
+  --color-gft-dark: #001326;
+  --radius-sm: 4px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tag-critical { background: var(--color-red); color: #fff; }
+.tag-high { background: var(--color-orange-500); color: var(--color-gft-dark); }
+.tag-medium { background: var(--color-warn); color: var(--color-gft-dark); }
+.tag-low { background: var(--color-green); color: #fff; }
+
+.tag-in-progress { background: var(--color-primary-700); color: #fff; }
+.tag-resolved { background: var(--color-green); color: #fff; }
+.tag-cancelled { background: var(--color-gray-300); color: var(--color-gft-dark); }
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-LightItalic.ttf') format('truetype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-RegularItalic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-MediumItalic.ttf') format('truetype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-SemiBoldItalic.ttf') format('truetype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-ExtraBoldItalic.ttf') format('truetype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+ 
+@font-face {
+  font-family: 'GFTCorporate';
+  src: url('/fonts/GFTCorporate-BlackItalic.ttf') format('truetype');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+// Global defaults, eviting the render the whole platform in Times.
+
+body {
+  font-family: 'GFTCorporate', sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: #1c1e21; /* --color-gray-700 from DESIGN.md */
+  background: #ffffff;
+  margin: 0;
+}
