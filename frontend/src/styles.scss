@@ -8,6 +8,7 @@
   --color-primary-100: #b8d9fa;
   --color-primary-700: #003879;
   --color-gray-200: #d8dee4;
+  --color-gray-300: #b3b8bf;
   --color-gray-700: #1c1e21;
   --color-light-gray-100: #f3f5f6;
   --color-gft-dark: #001326;
@@ -29,10 +30,9 @@
 .tag-medium { background: var(--color-warn); color: var(--color-gft-dark); }
 .tag-low { background: var(--color-green); color: #fff; }
 
-.tag-new { background: var(--color-primary-100); color: var(--color-gft-dark); }
 .tag-in-progress { background: var(--color-primary-700); color: #fff; }
-.tag-pending { background: var(--color-gray-200); color: var(--color-gray-700); }
 .tag-resolved { background: var(--color-green); color: #fff; }
+.tag-cancelled { background: var(--color-gray-300); color: var(--color-gft-dark); }
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

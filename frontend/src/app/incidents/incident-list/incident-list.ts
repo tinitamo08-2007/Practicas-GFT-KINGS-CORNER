@@ -18,16 +18,12 @@ export class IncidentList {
 
   protected estadoTagClass(estado: Incident['estado']): string {
     switch (estado) {
-      case 'Nueva':
-        return 'tag-new';
-      case 'Asignada':
       case 'En progreso':
         return 'tag-in-progress';
-      case 'Pendiente':
-        return 'tag-pending';
       case 'Resuelta':
-      case 'Cerrada':
         return 'tag-resolved';
+      case 'Cancelada':
+        return 'tag-cancelled';
     }
   }
 

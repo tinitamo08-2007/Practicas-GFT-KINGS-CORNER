@@ -1,10 +1,4 @@
-export type IncidentEstado =
-  | 'Nueva'
-  | 'Asignada'
-  | 'En progreso'
-  | 'Pendiente'
-  | 'Resuelta'
-  | 'Cerrada';
+export type IncidentEstado = 'En progreso' | 'Resuelta' | 'Cancelada';
 
 export type IncidentPrioridad = 'Critica' | 'Alta' | 'Media' | 'Baja';
 
@@ -16,7 +10,7 @@ export interface Incident {
   descripcion: string;
   estado: IncidentEstado;
   prioridad: IncidentPrioridad;
-  categoria: string;
+  categoria: string | null;
   reportadoPor: string;
   asignadoA: string | null;
   equipo: string | null;
@@ -26,5 +20,5 @@ export interface Incident {
   fechaCreacion: string;
   fechaActualizacion: string;
   fechaCierre: string | null;
-  slaVencimiento: string;
+  slaVencimiento: string | null;
 }
