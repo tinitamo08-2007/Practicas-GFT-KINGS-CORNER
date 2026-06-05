@@ -46,3 +46,74 @@ tbody tr {
 tbody tr:hover {
   background: var(--color-light-gray-100);
 }
+
+/* Filter bar.
+   Spacing is intentionally finer than DESIGN.md §4's smallest named token
+   (--space-grid-gutter-line, 1.5rem); literal rem matches this component's
+   existing spacing style. */
+.incident-list__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.incident-list__search,
+.incident-list__select {
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.875rem; /* --text-sm from DESIGN.md §3 */
+  color: var(--color-gray-700);
+}
+
+.incident-list__search {
+  flex: 1 1 18rem;
+  min-width: 12rem;
+}
+
+.incident-list__search:focus-visible,
+.incident-list__select:focus-visible {
+  border-color: #006bd6; /* --color-primary-500 from DESIGN.md §2 */
+  box-shadow: 0 0 0 2px rgba(0, 107, 214, 0.25); /* --color-primary-500 @ 25%, DESIGN.md §8 Forms */
+  outline: 2px solid transparent; /* fallback: rendered in forced-colors / Windows High Contrast */
+  outline-offset: 2px;
+}
+
+.incident-list__clear {
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.875rem; /* --text-sm from DESIGN.md §3 */
+  color: var(--color-gft-dark);
+  cursor: pointer;
+  transition: background 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.incident-list__clear:hover {
+  background: var(--color-gray-200); /* subtle/outlined button hover, DESIGN.md §8 Buttons */
+}
+
+.incident-list__clear:focus-visible {
+  border-color: #006bd6; /* --color-primary-500 from DESIGN.md §2 */
+  box-shadow: 0 0 0 2px rgba(0, 107, 214, 0.25); /* --color-primary-500 @ 25%, DESIGN.md §8 Forms */
+  outline: 2px solid transparent; /* fallback: rendered in forced-colors / Windows High Contrast */
+  outline-offset: 2px;
+}
+
+.incident-list__count {
+  margin: 0 0 1rem;
+  color: #4d535a; /* --color-gray-500 from DESIGN.md §2 (gray-400 #80878f was ~3.6:1, below AA 4.5:1) */
+  font-size: 0.875rem; /* --text-sm from DESIGN.md §3 */
+}
+
+.incident-list__empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: #4d535a; /* --color-gray-500 from DESIGN.md §2 */
+}
