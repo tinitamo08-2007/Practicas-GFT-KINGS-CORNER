@@ -5,14 +5,18 @@
   --color-orange-500: #ff7f3c;
   --color-warn: oklch(0.681 0.162 75.834);
   --color-green: #00b427;
+  --color-green-700: #007d1c;
   --color-primary-100: #b8d9fa;
+  --color-primary-500: #006bd6;
   --color-primary-700: #003879;
   --color-gray-200: #d8dee4;
   --color-gray-300: #b3b8bf;
+  --color-gray-500: #4d535a;
   --color-gray-700: #1c1e21;
   --color-light-gray-100: #f3f5f6;
   --color-gft-dark: #001326;
   --radius-sm: 4px;
+  --text-sm: 0.875rem;
 }
 
 .tag {
@@ -28,10 +32,10 @@
 .tag-critical { background: var(--color-red); color: #fff; }
 .tag-high { background: var(--color-orange-500); color: var(--color-gft-dark); }
 .tag-medium { background: var(--color-warn); color: var(--color-gft-dark); }
-.tag-low { background: var(--color-green); color: #fff; }
+.tag-low { background: var(--color-green-700); color: #fff; }
 
 .tag-in-progress { background: var(--color-primary-700); color: #fff; }
-.tag-resolved { background: var(--color-green); color: #fff; }
+.tag-resolved { background: var(--color-green-700); color: #fff; }
 .tag-cancelled { background: var(--color-gray-300); color: var(--color-gft-dark); }
 
 .mono {

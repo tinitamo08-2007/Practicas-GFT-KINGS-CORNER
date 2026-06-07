@@ -1,0 +1,103 @@
+@if (incident(); as inc) {
+  <article class="incident-detail">
+    <a class="incident-detail__back" routerLink="/incidents">← Volver a incidencias</a>
+
+    <header class="incident-detail__header">
+      <div class="incident-detail__meta">
+        <span class="mono incident-detail__codigo">{{ inc.codigo }}</span>
+        <span class="incident-detail__origen">Origen · {{ inc.origen }}</span>
+      </div>
+      <h1 class="incident-detail__title">{{ inc.titulo }}</h1>
+      <div class="incident-detail__tags">
+        <span class="tag" [class]="estadoTagClass(inc.estado)">{{ inc.estado }}</span>
+        <span class="tag" [class]="prioridadTagClass(inc.prioridad)">{{ inc.prioridad }}</span>
+      </div>
+    </header>
+
+    <div class="incident-detail__body">
+      <div class="incident-detail__main">
+        <section class="incident-detail__section">
+          <h2>Descripción</h2>
+          <p class="incident-detail__prose">{{ inc.descripcion }}</p>
+        </section>
+
+        <section class="incident-detail__section">
+          <h2>Análisis</h2>
+          <div class="incident-detail__field">
+            <span class="incident-detail__label">Causa</span>
+            @if (inc.causa) {
+              <p class="incident-detail__prose">{{ inc.causa }}</p>
+            } @else {
+              <p class="incident-detail__empty">Sin causa registrada</p>
+            }
+          </div>
+          <div class="incident-detail__field">
+            <span class="incident-detail__label">Solución</span>
+            @if (inc.solucion) {
+              <p class="incident-detail__prose">{{ inc.solucion }}</p>
+            } @else {
+              <p class="incident-detail__empty">Sin solución registrada</p>
+            }
+          </div>
+        </section>
+      </div>
+
+      <aside class="incident-detail__side">
+        <section class="incident-detail__panel">
+          <h2>Detalles</h2>
+          <dl class="incident-detail__rows">
+            <div class="incident-detail__row">
+              <dt>Estado</dt>
+              <dd>{{ inc.estado }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Prioridad</dt>
+              <dd>{{ inc.prioridad }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Equipo</dt>
+              <dd>{{ inc.equipo ?? 'Sin asignar' }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Asignado a</dt>
+              <dd>{{ inc.asignadoA ?? 'Sin asignar' }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Reportado por</dt>
+              <dd>{{ inc.reportadoPor }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Categoría</dt>
+              <dd>{{ inc.categoria ?? '—' }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Vencimiento SLA</dt>
+              <dd>{{ inc.slaVencimiento ? (inc.slaVencimiento | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Creación</dt>
+              <dd>{{ inc.fechaCreacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Actualización</dt>
+              <dd>{{ inc.fechaActualizacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
+            </div>
+            <div class="incident-detail__row">
+              <dt>Cierre</dt>
+              <dd>{{ inc.fechaCierre ? (inc.fechaCierre | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
+            </div>
+          </dl>
+        </section>
+      </aside>
+    </div>
+  </article>
+} @else if (loaded()) {
+  <div class="incident-detail incident-detail--message">
+    <a class="incident-detail__back" routerLink="/incidents">← Volver a incidencias</a>
+    <p class="incident-detail__notfound">Incidencia no encontrada</p>
+  </div>
+} @else {
+  <div class="incident-detail incident-detail--message">
+    <p class="incident-detail__loading">Cargando…</p>
+  </div>
+}

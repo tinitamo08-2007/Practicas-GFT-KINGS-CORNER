@@ -66,7 +66,7 @@ tbody tr:hover {
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 0.875rem; /* --text-sm from DESIGN.md §3 */
+  font-size: var(--text-sm);
   color: var(--color-gray-700);
 }
 
@@ -77,8 +77,8 @@ tbody tr:hover {
 
 .incident-list__search:focus-visible,
 .incident-list__select:focus-visible {
-  border-color: #006bd6; /* --color-primary-500 from DESIGN.md §2 */
-  box-shadow: 0 0 0 2px rgba(0, 107, 214, 0.25); /* --color-primary-500 @ 25%, DESIGN.md §8 Forms */
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
   outline: 2px solid transparent; /* fallback: rendered in forced-colors / Windows High Contrast */
   outline-offset: 2px;
 }
@@ -89,7 +89,7 @@ tbody tr:hover {
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 0.875rem; /* --text-sm from DESIGN.md §3 */
+  font-size: var(--text-sm);
   color: var(--color-gft-dark);
   cursor: pointer;
   transition: background 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -100,20 +100,38 @@ tbody tr:hover {
 }
 
 .incident-list__clear:focus-visible {
-  border-color: #006bd6; /* --color-primary-500 from DESIGN.md §2 */
-  box-shadow: 0 0 0 2px rgba(0, 107, 214, 0.25); /* --color-primary-500 @ 25%, DESIGN.md §8 Forms */
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
   outline: 2px solid transparent; /* fallback: rendered in forced-colors / Windows High Contrast */
   outline-offset: 2px;
 }
 
 .incident-list__count {
   margin: 0 0 1rem;
-  color: #4d535a; /* --color-gray-500 from DESIGN.md §2 (gray-400 #80878f was ~3.6:1, below AA 4.5:1) */
-  font-size: 0.875rem; /* --text-sm from DESIGN.md §3 */
+  color: var(--color-gray-500); /* gray-400 #80878f was ~3.6:1, below AA */
+  font-size: var(--text-sm);
 }
 
 .incident-list__empty {
   padding: 2.5rem 1rem;
   text-align: center;
-  color: #4d535a; /* --color-gray-500 from DESIGN.md §2 */
+  color: var(--color-gray-500);
+}
+
+/* Código cell link to the incident detail view.
+   Resting underline is a non-color cue for the link affordance (WCAG 1.4.1);
+   primary-500 on white is ~5.2:1 (AA). */
+.incident-list td a.mono {
+  color: var(--color-primary-500);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.incident-list td a.mono:hover {
+  color: var(--color-primary-700);
+}
+
+.incident-list td a.mono:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
 }

@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 
 import { Incident, IncidentEstado, IncidentPrioridad } from '../incident.model';
 import { IncidentService } from '../incident.service';
@@ -10,7 +11,7 @@ const SIN_ASIGNAR = '__SIN_ASIGNAR__';
 
 @Component({
   selector: 'app-incident-list',
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   templateUrl: './incident-list.html',
   styleUrl: './incident-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

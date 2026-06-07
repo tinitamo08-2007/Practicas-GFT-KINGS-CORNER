@@ -73,7 +73,7 @@
       <tbody>
         @for (row of filtered(); track row.id) {
           <tr>
-            <td><span class="mono">{{ row.codigo }}</span></td>
+            <td><a class="mono" [routerLink]="['/incidents', row.codigo]">{{ row.codigo }}</a></td>
             <td>{{ row.titulo }}</td>
             <td>
               <span class="tag" [class]="estadoTagClass(row.estado)">{{ row.estado }}</span>
