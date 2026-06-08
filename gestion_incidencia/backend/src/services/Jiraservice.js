@@ -23,7 +23,6 @@ const construirCabecerasJira = () => {
 
 // URL base de la API de Jira.
 // IMPORTANTE: es solo la raiz, cada funcion anade su ruta especifica.
-// Ejemplo: urlBase() + '/issue' = https://dominio.atlassian.net/rest/api/3/issue
 const urlBase = () => `https://${process.env.JIRA_DOMINIO}/rest/api/3`;
 
 // ============================================================
@@ -149,7 +148,6 @@ const actualizarEstadoEnJira = async (jiraId, nuevoEstado) => {
         const mapaEstados = {
             'En progreso': 'In Progress',
             'Resuelta':    'Done',
-           // 'Cerrada':     'Done',
             'Cancelada':   'Cancelled'
         };
 

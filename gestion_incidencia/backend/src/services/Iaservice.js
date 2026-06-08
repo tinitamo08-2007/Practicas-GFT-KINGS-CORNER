@@ -13,9 +13,7 @@
 //   6. Devuelve el analisis o null si algo fallo
 // ============================================================
 
-
-// URL de la API de Groq. Es compatible con el formato de OpenAI,
-// por eso el cuerpo de la peticion es identico al de OpenAI.
+// URL de la API de Groq
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 

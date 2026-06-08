@@ -1,12 +1,11 @@
 // ============================================================
-// ARCHIVO: scripts/limpiarJiraRango.js
 // FUNCION: Borra de Jira todos los tickets EXCEPTO los que
 //          están en el rango GFT-226 a GFT-325.
 // ============================================================
 
 const DOMINIO  = 'proyectogft.atlassian.net';
 const EMAIL    = 'gmendoza@steam.thehubfp.es';
-const TOKEN    = 'ATATT3xFfGF0An2kuYVkMgxJFJYoVJjTWbQCJ2jkZYA8P6c5HgUKa-VLRCmEU3Rjtq9n9E-OSvqAYo0OPxx2ORnLRNoEuiSlF1rCDMqJiZJKyIJ2ICc6b7sEVQdzXbXJbEdtYtMVYGCWrNjbuakE_gEQC0YDIHb7S7OmAG3M72aDOMavLTKiVp4=601EEA23';
+const TOKEN    = 'ATATT3xFfGF0Q8DPmMp4SJSDcKtTFBpVaUAaWYWP1qMAMrswG4hIphbL1syTOEao23-hAXdqLk22Tzox7rDHjctLgkbyZHcRvh6J7Gc73BwwPTpwLySsqzmZJUhNVhu3oxgKlTQ4j9u2SUCWjbqvKXCuBGJuLWuYTqRTJxnGorAsExl0LnJp5P0=4FF4DD3F';
 const PROYECTO = 'GFT';
 
 const RANGO_MIN = 226;
