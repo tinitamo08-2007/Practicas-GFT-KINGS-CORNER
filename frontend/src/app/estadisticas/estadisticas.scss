@@ -1,0 +1,112 @@
+.estadisticas {
+  max-width: 1608px;
+  margin: 0 auto;
+  padding: 2.5rem 2.25rem;
+}
+
+.estadisticas__title {
+  margin: 0 0 2rem;
+  color: var(--color-gft-dark);
+  font-weight: 300;
+  font-size: 2.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* Resumen cards */
+.estadisticas__resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.estadisticas__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.estadisticas__card-value {
+  color: var(--color-gft-dark);
+  font-weight: 300;
+  font-size: 2.25rem;
+  line-height: 1.1;
+}
+
+.estadisticas__card-label {
+  color: var(--color-gray-500); /* ~7.7:1 on white (AA); gray-300/400 fail */
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* Distribution sections */
+.estadisticas__section {
+  margin-bottom: 2.5rem;
+}
+
+.estadisticas__section:last-child {
+  margin-bottom: 0;
+}
+
+.estadisticas__section h2 {
+  margin: 0 0 1rem;
+  color: var(--color-gft-dark);
+  font-weight: 300;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.estadisticas__bars {
+  margin: 0;
+  padding: 0;
+  list-style: none; /* role="list" pinned in the template so VoiceOver keeps list semantics */
+}
+
+.estadisticas__bar-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr 5rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.estadisticas__bar-name {
+  color: var(--color-gray-700);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.estadisticas__bar-track {
+  height: 1.25rem;
+  background: var(--color-light-gray-100);
+  border-radius: var(--radius-sm);
+  overflow: hidden; /* clips the fill to the track's rounded corners */
+}
+
+.estadisticas__bar-fill {
+  height: 100%;
+  min-width: 4px; /* a 1%/single-incident bucket stays visible instead of vanishing */
+}
+
+.estadisticas__bar-readout {
+  color: var(--color-gray-500); /* ~7.7:1 on white (AA) */
+  font-size: var(--text-sm);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Empty / loading messages */
+.estadisticas__empty,
+.estadisticas__loading {
+  margin: 2.5rem 0 0;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--color-gray-500);
+  font-size: var(--text-sm);
+}

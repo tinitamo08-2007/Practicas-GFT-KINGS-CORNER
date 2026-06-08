@@ -1,0 +1,186 @@
+.incident-detail {
+  max-width: 1608px;
+  margin: 0 auto;
+  padding: 2.5rem 2.25rem;
+}
+
+.incident-detail__back {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: var(--color-primary-500);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.incident-detail__back:hover {
+  text-decoration: underline;
+}
+
+.incident-detail__back:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Header */
+.incident-detail__header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.incident-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.incident-detail__codigo {
+  font-size: var(--text-sm);
+  color: var(--color-gray-700);
+}
+
+/* Non-semantic origin pill — distinct from the estado/prioridad .tag classes. */
+.incident-detail__origen {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--color-light-gray-100);
+  color: var(--color-gray-700);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.incident-detail__title {
+  margin: 0 0 1rem;
+  color: var(--color-gft-dark);
+  font-weight: 300;
+  font-size: 2.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.incident-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Body: main column + Detalles sidebar (stacked on mobile, two columns at lg). */
+.incident-detail__body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 64rem) {
+  .incident-detail__body {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+.incident-detail__section {
+  margin-bottom: 2rem;
+}
+
+.incident-detail__section:last-child {
+  margin-bottom: 0;
+}
+
+.incident-detail__section h2,
+.incident-detail__panel h2 {
+  margin: 0 0 1rem;
+  color: var(--color-gft-dark);
+  font-weight: 300;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.incident-detail__prose {
+  margin: 0;
+  color: var(--color-gray-700);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.incident-detail__field {
+  margin-bottom: 1.25rem;
+}
+
+.incident-detail__field:last-child {
+  margin-bottom: 0;
+}
+
+.incident-detail__label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--color-gray-500);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* Empty states use gray-500 (~7.7:1 on white); gray-400 (~3.6:1) and gray-300 fail AA. */
+.incident-detail__empty {
+  margin: 0;
+  color: var(--color-gray-500);
+  font-size: var(--text-sm);
+  font-style: italic;
+}
+
+/* Detalles panel */
+.incident-detail__panel {
+  padding: 1.5rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.incident-detail__rows {
+  margin: 0;
+}
+
+.incident-detail__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.incident-detail__row:last-child {
+  border-bottom: 0;
+}
+
+.incident-detail__row dt {
+  color: var(--color-gray-500);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.incident-detail__row dd {
+  margin: 0;
+  color: var(--color-gray-700);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
+/* Loading / not-found messages */
+.incident-detail__notfound {
+  margin: 2.5rem 0 0;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--color-gray-500);
+  font-size: 1.5rem;
+  font-weight: 300;
+}
+
+.incident-detail__loading {
+  margin: 0;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--color-gray-500);
+  font-size: var(--text-sm);
+}
