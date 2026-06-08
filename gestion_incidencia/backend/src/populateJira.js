@@ -1,4 +1,5 @@
 // ============================================================
+// ARCHIVO: scripts/poblarJira.js
 // FUNCION: Crear 100 incidencias de prueba en Jira automaticamente.
 // ============================================================
 

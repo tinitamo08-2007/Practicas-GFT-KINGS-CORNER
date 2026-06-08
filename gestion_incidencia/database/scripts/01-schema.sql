@@ -1,6 +1,7 @@
 --
--- PostgreSQL database dump (original, sin cambios)
+-- PostgreSQL database dump
 --
+
 
 
 -- Dumped from database version 15.18 (Debian 15.18-1.pgdg13+1)
@@ -171,34 +172,9 @@ ALTER TABLE ONLY public.sugerencias_ia
 
 ALTER TABLE public.sugerencias_ia ENABLE ROW LEVEL SECURITY;
 
--- ============================================================
--- ADICIONES NECESARIAS (sin modificar nada de lo anterior)
--- ============================================================
-
--- 1. Función y trigger para asignar código automáticamente
-CREATE OR REPLACE FUNCTION public.asignar_codigo_incidencia()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.codigo := 'INC-' || to_char(NEW.fecha_creacion, 'YYYY') || '-' || lpad(NEW.id::text, 6, '0');
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_asignar_codigo ON public.incidencias;
-CREATE TRIGGER trg_asignar_codigo
-    BEFORE INSERT ON public.incidencias
-    FOR EACH ROW
-    EXECUTE FUNCTION public.asignar_codigo_incidencia();
-
--- 2. Clave foránea con borrado en cascada para sugerencias_ia
--- Primero se eliminan posibles huérfanos (por si acaso)
-DELETE FROM public.sugerencias_ia WHERE incidencia_id NOT IN (SELECT id FROM public.incidencias);
-
-ALTER TABLE ONLY public.sugerencias_ia
-    ADD CONSTRAINT fk_sugerencia_incidencia
-    FOREIGN KEY (incidencia_id) REFERENCES public.incidencias(id)
-    ON DELETE CASCADE;
-
 --
--- PostgreSQL database dump complete (con adiciones)
+-- PostgreSQL database dump complete
 --
+
+
+

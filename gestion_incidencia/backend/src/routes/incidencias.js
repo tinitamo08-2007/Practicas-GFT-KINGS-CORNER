@@ -1,4 +1,5 @@
 // ============================================================
+// ARCHIVO: src/routes/incidencias.js
 // CAMBIOS: Se añaden dos rutas nuevas para la sugerencia de IA
 // ============================================================
 
