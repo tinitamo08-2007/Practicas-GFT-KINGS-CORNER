@@ -1,0 +1,74 @@
+<section class="estadisticas">
+  <h1 class="estadisticas__title">Estadísticas</h1>
+
+  @if (data()?.length) {
+    <div class="estadisticas__resumen">
+      <div class="estadisticas__card">
+        <span class="estadisticas__card-value">{{ resumen().total }}</span>
+        <span class="estadisticas__card-label">Total de incidencias</span>
+      </div>
+      <div class="estadisticas__card">
+        <span class="estadisticas__card-value">{{ resumen().enProgreso }}</span>
+        <span class="estadisticas__card-label">En progreso</span>
+      </div>
+      <div class="estadisticas__card">
+        <span class="estadisticas__card-value">{{ resumen().resueltas }}</span>
+        <span class="estadisticas__card-label">Resueltas</span>
+      </div>
+      <div class="estadisticas__card">
+        <span class="estadisticas__card-value">{{ resumen().canceladas }}</span>
+        <span class="estadisticas__card-label">Canceladas</span>
+      </div>
+    </div>
+
+    <section class="estadisticas__section">
+      <h2>Por estado</h2>
+      <ul class="estadisticas__bars" role="list">
+        @for (row of estadoStats(); track row.label) {
+          <li class="estadisticas__bar-row">
+            <span class="estadisticas__bar-name" aria-hidden="true">{{ row.label }}</span>
+            <div class="estadisticas__bar-track">
+              <div
+                class="estadisticas__bar-fill"
+                role="img"
+                [style.width.%]="row.percent"
+                [style.background]="estadoColor(row.label)"
+                [attr.aria-label]="barAriaLabel(row)"
+              ></div>
+            </div>
+            <span class="estadisticas__bar-readout" aria-hidden="true">
+              {{ row.count }} · {{ row.percent }}%
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="estadisticas__section">
+      <h2>Por prioridad</h2>
+      <ul class="estadisticas__bars" role="list">
+        @for (row of prioridadStats(); track row.label) {
+          <li class="estadisticas__bar-row">
+            <span class="estadisticas__bar-name" aria-hidden="true">{{ row.label }}</span>
+            <div class="estadisticas__bar-track">
+              <div
+                class="estadisticas__bar-fill"
+                role="img"
+                [style.width.%]="row.percent"
+                [style.background]="prioridadColor(row.label)"
+                [attr.aria-label]="barAriaLabel(row)"
+              ></div>
+            </div>
+            <span class="estadisticas__bar-readout" aria-hidden="true">
+              {{ row.count }} · {{ row.percent }}%
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+  } @else if (data()) {
+    <p class="estadisticas__empty">Sin datos</p>
+  } @else {
+    <p class="estadisticas__loading">Cargando…</p>
+  }
+</section>

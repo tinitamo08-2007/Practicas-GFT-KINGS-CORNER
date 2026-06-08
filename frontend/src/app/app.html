@@ -7,6 +7,23 @@
   <span class="app-header__title">GFT Triage Platform</span>
 </header>
 
+<nav class="app-nav" aria-label="Principal">
+  <a
+    class="app-nav__link"
+    routerLink="/incidents"
+    routerLinkActive="active"
+    ariaCurrentWhenActive="page"
+    >Incidencias</a
+  >
+  <a
+    class="app-nav__link"
+    routerLink="/estadisticas"
+    routerLinkActive="active"
+    ariaCurrentWhenActive="page"
+    >Estadísticas</a
+  >
+</nav>
+
 <main>
   <router-outlet />
 </main>
