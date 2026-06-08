@@ -1,5 +1,4 @@
 // ============================================================
-// ARCHIVO: scripts/reprocesarIA.js
 // FUNCION: Reprocesa con Groq las incidencias que quedaron
 //          con categoria "Sin clasificar" por limite de peticiones.
 //
@@ -10,7 +9,7 @@
 require('dotenv').config();
 
 const { Pool }           = require('pg');
-const { analizarIncidencia } = require('../src/services/Iaservice');
+const { analizarIncidencia } = require('../services/Iaservice');
 
 const pool = new Pool({
     host:     process.env.DB_HOST,

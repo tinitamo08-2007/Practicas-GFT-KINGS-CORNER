@@ -1,5 +1,4 @@
 // ============================================================
-// ARCHIVO: scripts/sincronizarJira.js
 // FUNCION: Borra de Jira los tickets que NO existen en la BD.
 //          Mantiene solo los tickets que coinciden con jira_id
 //          registrados en la tabla incidencias.

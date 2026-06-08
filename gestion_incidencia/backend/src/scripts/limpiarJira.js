@@ -1,5 +1,4 @@
 // ============================================================
-// ARCHIVO: scripts/limpiarJira.js
 // FUNCION: Borrar todos los tickets del proyecto GFT en Jira
 //          y limpiar la base de datos local.
 //

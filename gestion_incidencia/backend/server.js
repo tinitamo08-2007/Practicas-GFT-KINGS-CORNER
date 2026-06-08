@@ -1,5 +1,4 @@
 // ============================================================
-// ARCHIVO: server.js
 // FUNCION: Punto de entrada del backend.
 //          Carga el .env, registra las rutas y arranca el servidor.
 //          Antes de arrancar, prueba que la BD responde.
@@ -11,8 +10,6 @@ require('dotenv').config();
 const pool    = require('./src/db/pool');
 const express = require('express');
 const cors    = require('cors');
-
-
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -32,7 +29,6 @@ app.get('/api/prueba', (req, res) => {
 });
 
 // Ruta de prueba para verificar que Jira responde
-// Borrala cuando ya no la necesites
 app.get('/api/test-jira', async (req, res) => {
     const { obtenerIncidenciasDeJira } = require('./src/services/Jiraservice');
     const resultado = await obtenerIncidenciasDeJira();
