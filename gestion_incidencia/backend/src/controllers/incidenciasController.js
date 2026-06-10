@@ -1,5 +1,4 @@
 // ============================================================
-// ARCHIVO: src/controllers/incidenciasController.js
 // FUNCION: Logica de cada operacion sobre las incidencias.
 //          Version con PostgreSQL: usa pool.query() para todas
 //          las operaciones en lugar del array en memoria.
