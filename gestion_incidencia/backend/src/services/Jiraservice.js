@@ -53,7 +53,7 @@ const obtenerIncidenciasDeJira = async () => {
             jira_id:       ticket.key,
             titulo:        ticket.fields.summary,
             descripcion:   ticket.fields.description?.content?.[0]?.content?.[0]?.text || '',
-            estado:        ticket.fields.status?.name    || 'Nueva',
+            estado:        ticket.fields.status?.name    || 'Por hacer',
             prioridad:     ticket.fields.priority?.name  || 'Media',
             reportado_por: ticket.fields.reporter?.displayName || null,
             asignado_a:    ticket.fields.assignee?.displayName || null,
@@ -130,6 +130,12 @@ const crearTicketEnJira = async (incidencia) => {
 // Cambia el estado de un ticket en Jira.
 // En Jira, cambiar el estado se hace con "transiciones", no con PUT.
 // Hay que pedir las transiciones disponibles y luego aplicar la correcta.
+//
+// ESTADOS VALIDOS EN ESTE PROYECTO:
+//   'Por hacer'   -> ticket recien creado o sin iniciar
+//   'En curso'    -> se esta trabajando en el ticket
+//   'En revision' -> pendiente de validacion
+//   'Finalizado'  -> ticket completado o cancelado
 // ============================================================
 const actualizarEstadoEnJira = async (jiraId, nuevoEstado) => {
     try {
@@ -144,15 +150,25 @@ const actualizarEstadoEnJira = async (jiraId, nuevoEstado) => {
 
         const datosTransiciones = await respTransiciones.json();
 
-        // Mapeamos nuestros estados al nombre que usa Jira
+        // Mapeamos nuestros estados directamente a los estados de Jira.
+        // Los nombres coinciden exactamente con los configurados en el proyecto
+        // (verificado con GET /rest/api/3/issue/{key}/transitions):
+        //   11 -> Por hacer
+        //   21 -> En curso
+        //   31 -> En revision
+        //   41 -> Finalizado
         const mapaEstados = {
-            'En progreso': 'In Progress',
-            'Resuelta':    'Done',
-            'Cancelada':   'Cancelled'
+            'Por hacer':   'Por hacer',
+            'En curso':    'En curso',
+            'En revisión': 'En revisión',
+            'Finalizado':  'Finalizado'
         };
 
         const nombreJira = mapaEstados[nuevoEstado];
-        if (!nombreJira) return false;
+        if (!nombreJira) {
+            console.error(`Estado "${nuevoEstado}" no reconocido. Estados validos: ${Object.keys(mapaEstados).join(', ')}`);
+            return false;
+        }
 
         const transicion = datosTransiciones.transitions.find(
             t => t.name.toLowerCase() === nombreJira.toLowerCase()
