@@ -10,6 +10,7 @@ require('dotenv').config();
 const pool    = require('./src/db/pool');
 const express = require('express');
 const cors    = require('cors');
+const net     = require('net'); 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -42,6 +43,66 @@ app.get('/api/test-jira', async (req, res) => {
 // Registramos las rutas
 app.use('/api/incidencias', rutasIncidencias);
 app.use('/api/webhooks',    rutasWebhooks);
+
+// ============================================================
+// FUNCION: puertoEstaLibre
+// Comprueba si un puerto concreto esta disponible.
+// Devuelve true si esta libre, false si esta ocupado.
+//intenta abrir un servidor TCP en ese puerto.
+// Si lo consigue, el puerto esta libre y lo cierra inmediatamente.
+// Si falla con EADDRINUSE, el puerto ya esta en uso.
+// ============================================================
+const puertoEstaLibre = (puerto) => {
+    return new Promise((resolve) => {
+        const servidor = net.createServer();
+ 
+        // Si el puerto esta ocupado, net lanza el evento 'error'
+        servidor.once('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                resolve(false); // puerto ocupado
+            } else {
+                resolve(false); // otro error, tambien lo consideramos ocupado
+            }
+        });
+ 
+        // Si consigue escuchar, el puerto esta libre
+        servidor.once('listening', () => {
+            servidor.close();  // lo cerramos de inmediato, solo era la comprobacion
+            resolve(true);     // puerto libre
+        });
+ 
+        servidor.listen(puerto);
+    });
+};
+ 
+ 
+// ============================================================
+// FUNCION: encontrarPuertoLibre
+// Empieza en el puerto base del .env y va probando uno a uno
+// hasta encontrar uno libre. Tiene un limite de 10 intentos
+// para no buscar indefinidamente.
+// ============================================================
+const encontrarPuertoLibre = async (puertoInicial) => {
+    const MAX_INTENTOS = 10;
+ 
+    for (let i = 0; i < MAX_INTENTOS; i++) {
+        const puerto = puertoInicial + i;
+        const libre  = await puertoEstaLibre(puerto);
+ 
+        if (libre) {
+            if (i > 0) {
+                // Avisamos que se cambio el puerto para que no haya confusion
+                console.log(`Puerto ${puertoInicial} ocupado. Usando puerto ${puerto} en su lugar.`);
+            }
+            return puerto;
+        } else {
+            console.log(`Puerto ${puerto} ocupado, probando el siguiente...`);
+        }
+    }
+ 
+    // Si llego aqui es que los 10 puertos seguidos estan ocupados
+    throw new Error(`No se encontro ningun puerto libre entre ${puertoInicial} y ${puertoInicial + MAX_INTENTOS - 1}.`);
+};
 
 
 // ── Arranque del servidor ────────────────────────────────────
