@@ -1,7 +1,3 @@
-// scripts/importarJiraSimple.js
-// Importa todos los tickets de Jira a la BD sin usar IA (rápido)
-// Luego ejecutar: node scripts/reprocesarIA.js para analizar con IA
-
 require('dotenv').config();
 const { Pool } = require('pg');
 
@@ -40,6 +36,7 @@ async function obtenerTodosLosTicketsJira() {
     const maxResults = 100;
 
     while (true) {
+        console.log(`Descargando tickets desde la posicion ${startAt}...`);
         const jql = `project = ${PROYECTO} ORDER BY created ASC`;
         const url = `${JIRA_API_BASE}/search/jql?jql=${encodeURIComponent(jql)}&maxResults=${maxResults}&startAt=${startAt}&fields=summary,description,priority,status,reporter,assignee,created`;
         const resp = await fetch(url, { headers: cabeceras });
@@ -51,7 +48,10 @@ async function obtenerTodosLosTicketsJira() {
         }
 
         tickets = tickets.concat(data.issues || []);
+        console.log(`Descargados ${tickets.length} tickets de ${data.total} totales`);
+
         if (tickets.length >= data.total) break;
+        if (tickets.length >= 100) break;
         startAt += maxResults;
     }
     return tickets;
@@ -80,13 +80,11 @@ async function crearIncidenciaSinIA(ticket) {
     try {
         await cliente.query('BEGIN');
 
-        // Reservar ID y generar código
         const { rows: seqRows } = await cliente.query("SELECT nextval('incidencias_id_seq') AS id");
         const nuevoId = seqRows[0].id;
         const anio = new Date().getFullYear();
         const codigo = `INC-${anio}-${String(nuevoId).padStart(6, '0')}`;
 
-        // Insertar incidencia (sin análisis de IA, categoría por defecto)
         const { rows } = await cliente.query(
             `INSERT INTO incidencias
                 (id, codigo, jira_id, titulo, descripcion, estado, prioridad, categoria,
@@ -101,7 +99,6 @@ async function crearIncidenciaSinIA(ticket) {
 
         const nueva = rows[0];
 
-        // Insertar sugerencia IA con valores por defecto (para que luego reprocesarIA.js la encuentre)
         await cliente.query(
             `INSERT INTO sugerencias_ia
                 (incidencia_id, categoria_sugerida, prioridad_sugerida, tiempo_sugerido,
@@ -109,22 +106,18 @@ async function crearIncidenciaSinIA(ticket) {
                  impacto, escalado_recomendado, nivel_escalado, etiquetas)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
             [
-                nueva.id,
-                'Sin clasificar',   // para que reprocesarIA.js lo detecte
-                prioridad,
-                'Sin estimar',
-                descripcion,
-                'Sin pasos sugeridos',
+                nueva.id, 'Sin clasificar', prioridad, 'Sin estimar',
+                descripcion, 'Sin pasos sugeridos',
                 null, null, null, false, null, []
             ]
         );
 
         await cliente.query('COMMIT');
-        console.log(`Importada: ${codigo} (${jiraId}) - pendiente de IA`);
+        console.log(`Importada: ${codigo} (${jiraId})`);
         return true;
     } catch (err) {
         await cliente.query('ROLLBACK');
-        console.error(` Error al importar ${jiraId}:`, err.message);
+        console.error(`Error al importar ${jiraId}:`, err.message);
         return false;
     } finally {
         cliente.release();
@@ -134,7 +127,7 @@ async function crearIncidenciaSinIA(ticket) {
 async function importarTicketsJira() {
     console.log('Obteniendo tickets de Jira...');
     const tickets = await obtenerTodosLosTicketsJira();
-    console.log(`Total de tickets en Jira: ${tickets.length}`);
+    console.log(`Total de tickets descargados: ${tickets.length}`);
 
     let importados = 0;
     let yaExistian = 0;
@@ -143,7 +136,7 @@ async function importarTicketsJira() {
     for (const ticket of tickets) {
         const existe = await incidenciaExisteEnBD(ticket.key);
         if (existe) {
-            console.log(` ${ticket.key} ya existe, saltando.`);
+            console.log(`${ticket.key} ya existe, saltando.`);
             yaExistian++;
             continue;
         }
@@ -153,11 +146,11 @@ async function importarTicketsJira() {
         else errores++;
     }
 
-    console.log('\n Resumen de importación:');
-    console.log(`   - Importadas (sin IA): ${importados}`);
-    console.log(`   - Ya existían: ${yaExistian}`);
+    console.log('\nResumen:');
+    console.log(`   - Importadas: ${importados}`);
+    console.log(`   - Ya existian: ${yaExistian}`);
     console.log(`   - Errores: ${errores}`);
-    console.log('\nAhora ejecuta: node scripts/reprocesarIA.js para analizar con IA las incidencias pendientes.');
+    console.log('\nAhora ejecuta: node scripts/reprocesarIA.js');
     await pool.end();
 }
 
