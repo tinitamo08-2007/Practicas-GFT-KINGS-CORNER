@@ -101,9 +101,10 @@
   white-space: nowrap;
 }
 
-/* Empty / loading messages */
+/* Empty / loading / error messages */
 .estadisticas__empty,
-.estadisticas__loading {
+.estadisticas__loading,
+.estadisticas__error {
   margin: 2.5rem 0 0;
   padding: 2.5rem 1rem;
   text-align: center;

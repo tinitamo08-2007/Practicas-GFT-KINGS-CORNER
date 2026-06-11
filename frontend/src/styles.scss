@@ -37,6 +37,8 @@
 .tag-in-progress { background: var(--color-primary-700); color: #fff; }
 .tag-resolved { background: var(--color-green-700); color: #fff; }
 .tag-cancelled { background: var(--color-gray-300); color: var(--color-gft-dark); }
+.tag-nueva { background: var(--color-primary-500); color: #fff; }
+.tag-otro { background: var(--color-gray-500); color: #fff; }
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

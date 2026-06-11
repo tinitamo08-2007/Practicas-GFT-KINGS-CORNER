@@ -60,11 +60,11 @@
             </div>
             <div class="incident-detail__row">
               <dt>Asignado a</dt>
-              <dd>{{ inc.asignadoA ?? 'Sin asignar' }}</dd>
+              <dd>{{ inc.asignado_a ?? 'Sin asignar' }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Reportado por</dt>
-              <dd>{{ inc.reportadoPor }}</dd>
+              <dd>{{ inc.reportado_por }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Categoría</dt>
@@ -72,26 +72,31 @@
             </div>
             <div class="incident-detail__row">
               <dt>Vencimiento SLA</dt>
-              <dd>{{ inc.slaVencimiento ? (inc.slaVencimiento | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
+              <dd>{{ inc.sla_vencimiento ? (inc.sla_vencimiento | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Creación</dt>
-              <dd>{{ inc.fechaCreacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
+              <dd>{{ inc.fecha_creacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Actualización</dt>
-              <dd>{{ inc.fechaActualizacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
+              <dd>{{ inc.fecha_actualizacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Cierre</dt>
-              <dd>{{ inc.fechaCierre ? (inc.fechaCierre | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
+              <dd>{{ inc.fecha_cierre ? (inc.fecha_cierre | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
             </div>
           </dl>
         </section>
       </aside>
     </div>
   </article>
-} @else if (loaded()) {
+} @else if (status() === 'error') {
+  <div class="incident-detail incident-detail--message">
+    <a class="incident-detail__back" routerLink="/incidents">← Volver a incidencias</a>
+    <p class="incident-detail__error">No se pudieron cargar las incidencias</p>
+  </div>
+} @else if (status() === 'success') {
   <div class="incident-detail incident-detail--message">
     <a class="incident-detail__back" routerLink="/incidents">← Volver a incidencias</a>
     <p class="incident-detail__notfound">Incidencia no encontrada</p>

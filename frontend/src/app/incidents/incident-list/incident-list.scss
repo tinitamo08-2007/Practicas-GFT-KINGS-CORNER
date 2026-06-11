@@ -118,6 +118,13 @@ tbody tr:hover {
   color: var(--color-gray-500);
 }
 
+.incident-list__loading,
+.incident-list__error {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--color-gray-500);
+}
+
 /* Código cell link to the incident detail view.
    Resting underline is a non-color cue for the link affordance (WCAG 1.4.1);
    primary-500 on white is ~5.2:1 (AA). */

@@ -4,7 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
 import { Incident } from '../incident.model';
-import { IncidentService } from '../incident.service';
+import { IncidentLoadStatus, IncidentService } from '../incident.service';
 
 @Component({
   selector: 'app-incident-detail',
@@ -23,21 +23,27 @@ export class IncidentDetail {
     initialValue: [] as Incident[],
   });
 
-  /** True once the dataset has loaded; lets us tell "loading" apart from "no match". */
-  protected readonly loaded = computed(() => this.incidents().length > 0);
+  /** 'loading' until the shared fetch resolves; lets us tell loading / not-found / error apart. */
+  protected readonly status = toSignal(this.service.getLoadStatus(), {
+    initialValue: 'loading' as IncidentLoadStatus,
+  });
 
   protected readonly incident = computed(() =>
     this.incidents().find((i) => i.codigo === this.codigo()),
   );
 
-  protected estadoTagClass(estado: Incident['estado']): string {
+  protected estadoTagClass(estado: string): string {
     switch (estado) {
+      case 'Nueva':
+        return 'tag-nueva';
       case 'En progreso':
         return 'tag-in-progress';
       case 'Resuelta':
         return 'tag-resolved';
       case 'Cancelada':
         return 'tag-cancelled';
+      default:
+        return 'tag-otro';
     }
   }
 

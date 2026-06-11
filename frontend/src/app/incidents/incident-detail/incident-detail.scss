@@ -167,8 +167,9 @@
   text-align: right;
 }
 
-/* Loading / not-found messages */
-.incident-detail__notfound {
+/* Loading / not-found / error messages */
+.incident-detail__notfound,
+.incident-detail__error {
   margin: 2.5rem 0 0;
   padding: 2.5rem 1rem;
   text-align: center;

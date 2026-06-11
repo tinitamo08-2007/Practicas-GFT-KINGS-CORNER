@@ -1,7 +1,7 @@
 <section class="estadisticas">
   <h1 class="estadisticas__title">Estadísticas</h1>
 
-  @if (data()?.length) {
+  @if (status() === 'success' && data().length) {
     <div class="estadisticas__resumen">
       <div class="estadisticas__card">
         <span class="estadisticas__card-value">{{ resumen().total }}</span>
@@ -66,8 +66,10 @@
         }
       </ul>
     </section>
-  } @else if (data()) {
+  } @else if (status() === 'success') {
     <p class="estadisticas__empty">Sin datos</p>
+  } @else if (status() === 'error') {
+    <p class="estadisticas__error">No se pudieron cargar las incidencias</p>
   } @else {
     <p class="estadisticas__loading">Cargando…</p>
   }

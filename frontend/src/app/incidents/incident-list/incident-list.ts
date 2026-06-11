@@ -4,7 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
 import { Incident, IncidentEstado, IncidentPrioridad } from '../incident.model';
-import { IncidentService } from '../incident.service';
+import { IncidentLoadStatus, IncidentService } from '../incident.service';
 
 /** Value of the Equipo select's "Sin asignar" option; matches incidents whose equipo is null. */
 const SIN_ASIGNAR = '__SIN_ASIGNAR__';
@@ -23,6 +23,10 @@ export class IncidentList {
 
   protected readonly incidents = toSignal(this.service.getIncidents(), {
     initialValue: [] as Incident[],
+  });
+
+  protected readonly status = toSignal(this.service.getLoadStatus(), {
+    initialValue: 'loading' as IncidentLoadStatus,
   });
 
   protected readonly searchTerm = signal('');
@@ -83,14 +87,18 @@ export class IncidentList {
       .toLowerCase();
   }
 
-  protected estadoTagClass(estado: Incident['estado']): string {
+  protected estadoTagClass(estado: string): string {
     switch (estado) {
+      case 'Nueva':
+        return 'tag-nueva';
       case 'En progreso':
         return 'tag-in-progress';
       case 'Resuelta':
         return 'tag-resolved';
       case 'Cancelada':
         return 'tag-cancelled';
+      default:
+        return 'tag-otro';
     }
   }
 
