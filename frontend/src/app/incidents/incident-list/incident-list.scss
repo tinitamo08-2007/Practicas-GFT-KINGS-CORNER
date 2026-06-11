@@ -15,6 +15,9 @@
 
 .incident-list__table-wrap {
   overflow-x: auto;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
 }
 
 table {
@@ -47,6 +50,11 @@ tbody tr:hover {
   background: var(--color-light-gray-100);
 }
 
+/* The card border closes the table; avoid doubling it with the last row's own border. */
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 /* Filter bar.
    Spacing is intentionally finer than DESIGN.md §4's smallest named token
    (--space-grid-gutter-line, 1.5rem); literal rem matches this component's
@@ -57,6 +65,10 @@ tbody tr:hover {
   gap: 0.75rem;
   align-items: center;
   margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
 }
 
 .incident-list__search,
@@ -123,6 +135,9 @@ tbody tr:hover {
   padding: 2.5rem 1rem;
   text-align: center;
   color: var(--color-gray-500);
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
 }
 
 /* Código cell link to the incident detail view.

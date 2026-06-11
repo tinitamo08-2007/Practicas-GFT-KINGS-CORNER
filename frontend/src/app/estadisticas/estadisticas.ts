@@ -52,22 +52,23 @@ export class Estadisticas {
     const counts = this.countBy('estado');
     return {
       total: this.total(),
-      enProgreso: counts['En progreso'] ?? 0,
-      resueltas: counts['Resuelta'] ?? 0,
-      canceladas: counts['Cancelada'] ?? 0,
+      porHacer: counts['Por hacer'] ?? 0,
+      enCurso: counts['En curso'] ?? 0,
+      enRevision: counts['En revisión'] ?? 0,
+      finalizado: counts['Finalizado'] ?? 0,
     };
   });
 
   protected estadoColor(estado: string): string {
     switch (estado) {
-      case 'Nueva':
+      case 'Por hacer':
         return 'var(--color-primary-500)';
-      case 'En progreso':
+      case 'En curso':
         return 'var(--color-primary-700)';
-      case 'Resuelta':
+      case 'En revisión':
+        return 'var(--color-warn)';
+      case 'Finalizado':
         return 'var(--color-green-700)';
-      case 'Cancelada':
-        return 'var(--color-gray-300)';
       default:
         return 'var(--color-gray-500)';
     }

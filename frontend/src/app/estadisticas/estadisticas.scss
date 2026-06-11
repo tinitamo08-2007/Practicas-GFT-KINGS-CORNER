@@ -47,6 +47,10 @@
 /* Distribution sections */
 .estadisticas__section {
   margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
 }
 
 .estadisticas__section:last-child {
@@ -110,4 +114,7 @@
   text-align: center;
   color: var(--color-gray-500);
   font-size: var(--text-sm);
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
 }

@@ -34,14 +34,14 @@ export class IncidentDetail {
 
   protected estadoTagClass(estado: string): string {
     switch (estado) {
-      case 'Nueva':
-        return 'tag-nueva';
-      case 'En progreso':
-        return 'tag-in-progress';
-      case 'Resuelta':
-        return 'tag-resolved';
-      case 'Cancelada':
-        return 'tag-cancelled';
+      case 'Por hacer':
+        return 'tag-por-hacer';
+      case 'En curso':
+        return 'tag-en-curso';
+      case 'En revisión':
+        return 'tag-en-revision';
+      case 'Finalizado':
+        return 'tag-finalizado';
       default:
         return 'tag-otro';
     }

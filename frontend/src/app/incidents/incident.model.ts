@@ -1,12 +1,12 @@
 /** The four canonical estado values, in lifecycle order. The backend may emit others. */
-export type IncidentEstado = 'Nueva' | 'En progreso' | 'Resuelta' | 'Cancelada';
+export type IncidentEstado = 'Por hacer' | 'En curso' | 'En revisión' | 'Finalizado';
 
 /** Canonical estados in lifecycle order — drives the filter dropdown and the Estadísticas ordering. */
 export const CANONICAL_ESTADOS: readonly IncidentEstado[] = [
-  'Nueva',
-  'En progreso',
-  'Resuelta',
-  'Cancelada',
+  'Por hacer',
+  'En curso',
+  'En revisión',
+  'Finalizado',
 ];
 
 export type IncidentPrioridad = 'Critica' | 'Alta' | 'Media' | 'Baja';

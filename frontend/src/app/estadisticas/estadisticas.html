@@ -8,16 +8,20 @@
         <span class="estadisticas__card-label">Total de incidencias</span>
       </div>
       <div class="estadisticas__card">
-        <span class="estadisticas__card-value">{{ resumen().enProgreso }}</span>
-        <span class="estadisticas__card-label">En progreso</span>
+        <span class="estadisticas__card-value">{{ resumen().porHacer }}</span>
+        <span class="estadisticas__card-label">Por hacer</span>
       </div>
       <div class="estadisticas__card">
-        <span class="estadisticas__card-value">{{ resumen().resueltas }}</span>
-        <span class="estadisticas__card-label">Resueltas</span>
+        <span class="estadisticas__card-value">{{ resumen().enCurso }}</span>
+        <span class="estadisticas__card-label">En curso</span>
       </div>
       <div class="estadisticas__card">
-        <span class="estadisticas__card-value">{{ resumen().canceladas }}</span>
-        <span class="estadisticas__card-label">Canceladas</span>
+        <span class="estadisticas__card-value">{{ resumen().enRevision }}</span>
+        <span class="estadisticas__card-label">En revisión</span>
+      </div>
+      <div class="estadisticas__card">
+        <span class="estadisticas__card-value">{{ resumen().finalizado }}</span>
+        <span class="estadisticas__card-label">Finalizado</span>
       </div>
     </div>
 
