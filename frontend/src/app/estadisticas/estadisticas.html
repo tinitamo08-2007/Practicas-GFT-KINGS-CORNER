@@ -2,51 +2,105 @@
   <h1 class="estadisticas__title">Estadísticas</h1>
 
   @if (status() === 'success' && data().length) {
-    <div class="estadisticas__resumen">
-      <div class="estadisticas__card">
-        <span class="estadisticas__card-value">{{ resumen().total }}</span>
-        <span class="estadisticas__card-label">Total de incidencias</span>
+    <section class="estadisticas__section">
+      <h2>Resumen</h2>
+      <div class="estadisticas__resumen">
+        <div class="estadisticas__card">
+          <span class="estadisticas__card-value">{{ resumen().total }}</span>
+          <span class="estadisticas__card-label">Total de incidencias</span>
+        </div>
+        <div class="estadisticas__card">
+          <span class="estadisticas__card-value">{{ resumen().porHacer }}</span>
+          <span class="estadisticas__card-label">Por hacer</span>
+        </div>
+        <div class="estadisticas__card">
+          <span class="estadisticas__card-value">{{ resumen().enCurso }}</span>
+          <span class="estadisticas__card-label">En curso</span>
+        </div>
+        <div class="estadisticas__card">
+          <span class="estadisticas__card-value">{{ resumen().enRevision }}</span>
+          <span class="estadisticas__card-label">En revisión</span>
+        </div>
+        <div class="estadisticas__card">
+          <span class="estadisticas__card-value">{{ resumen().finalizado }}</span>
+          <span class="estadisticas__card-label">Finalizado</span>
+        </div>
       </div>
-      <div class="estadisticas__card">
-        <span class="estadisticas__card-value">{{ resumen().porHacer }}</span>
-        <span class="estadisticas__card-label">Por hacer</span>
-      </div>
-      <div class="estadisticas__card">
-        <span class="estadisticas__card-value">{{ resumen().enCurso }}</span>
-        <span class="estadisticas__card-label">En curso</span>
-      </div>
-      <div class="estadisticas__card">
-        <span class="estadisticas__card-value">{{ resumen().enRevision }}</span>
-        <span class="estadisticas__card-label">En revisión</span>
-      </div>
-      <div class="estadisticas__card">
-        <span class="estadisticas__card-value">{{ resumen().finalizado }}</span>
-        <span class="estadisticas__card-label">Finalizado</span>
-      </div>
-    </div>
+    </section>
 
     <section class="estadisticas__section">
-      <h2>Por estado</h2>
-      <ul class="estadisticas__bars" role="list">
-        @for (row of estadoStats(); track row.label) {
-          <li class="estadisticas__bar-row">
-            <span class="estadisticas__bar-name" aria-hidden="true">{{ row.label }}</span>
-            <div class="estadisticas__bar-track">
-              <div
-                class="estadisticas__bar-fill"
-                role="img"
-                [style.width.%]="row.percent"
-                [style.background]="estadoColor(row.label)"
-                [attr.aria-label]="barAriaLabel(row)"
-              ></div>
-            </div>
-            <span class="estadisticas__bar-readout" aria-hidden="true">
-              {{ row.count }} · {{ row.percent }}%
-            </span>
-          </li>
-        }
-      </ul>
+      <h2>Control diario</h2>
+      <div class="estadisticas__resumen">
+        <div class="estadisticas__card">
+          <span class="estadisticas__card-value">{{ controlDiario().creadasHoy }}</span>
+          <span class="estadisticas__card-label">Incidencias totales del día</span>
+        </div>
+        <div class="estadisticas__card">
+          <span class="estadisticas__card-value">{{ controlDiario().resueltasHoy }}</span>
+          <span class="estadisticas__card-label">Resueltas</span>
+        </div>
+        <div class="estadisticas__card">
+          <span class="estadisticas__card-value">{{ controlDiario().pctDentro }}%</span>
+          <span class="estadisticas__card-label">% dentro de plazo</span>
+        </div>
+      </div>
     </section>
+
+    <div class="estadisticas__charts">
+      <section class="estadisticas__section">
+        <h2>Por estado</h2>
+        <div class="estadisticas__chart">
+          <canvas #estadoCanvas aria-hidden="true" role="img"></canvas>
+        </div>
+        <table class="sr-only">
+          <caption>
+            Distribución de incidencias por estado
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Estado</th>
+              <th scope="col">Incidencias</th>
+              <th scope="col">Porcentaje</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of estadoStats(); track row.label) {
+              <tr>
+                <th scope="row">{{ row.label }}</th>
+                <td>{{ row.count }}</td>
+                <td>{{ row.percent }}%</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section class="estadisticas__section">
+        <h2>SLA</h2>
+        <div class="estadisticas__chart">
+          <canvas #slaCanvas aria-hidden="true" role="img"></canvas>
+        </div>
+        <table class="sr-only">
+          <caption>
+            Incidencias por vencimiento de SLA
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">SLA</th>
+              <th scope="col">Incidencias</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of slaStats(); track row.bucket) {
+              <tr>
+                <th scope="row">{{ row.label }}</th>
+                <td>{{ row.count }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    </div>
 
     <section class="estadisticas__section">
       <h2>Por prioridad</h2>

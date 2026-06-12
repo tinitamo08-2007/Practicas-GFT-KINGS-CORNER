@@ -13,12 +13,11 @@
   letter-spacing: -0.01em;
 }
 
-/* Resumen cards */
+/* Card grids (Resumen, Control diario), nested inside their section cards */
 .estadisticas__resumen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: 1rem;
-  margin-bottom: 2.5rem;
 }
 
 .estadisticas__card {
@@ -64,6 +63,24 @@
   font-size: 1.5rem;
   line-height: 1.2;
   letter-spacing: -0.01em;
+}
+
+/* Two-up chart row: side-by-side section cards that stack when the viewport narrows */
+.estadisticas__charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.estadisticas__charts .estadisticas__section {
+  margin-bottom: 0;
+}
+
+/* Chart.js with maintainAspectRatio: false needs a positioned, fixed-height parent */
+.estadisticas__chart {
+  position: relative;
+  height: 280px;
 }
 
 .estadisticas__bars {
