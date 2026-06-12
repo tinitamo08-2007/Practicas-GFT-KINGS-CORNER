@@ -55,6 +55,19 @@
         }
       </select>
 
+      <select
+        #slaSelect
+        class="incident-list__select"
+        aria-label="Filtrar por SLA"
+        [value]="slaFilter()"
+        (change)="setSla(slaSelect.value)"
+      >
+        <option value="">SLA: todas</option>
+        <option value="vencida">Vencidas</option>
+        <option value="a-punto">A punto de vencer</option>
+        <option value="dentro">Dentro de plazo</option>
+      </select>
+
       <button type="button" class="incident-list__clear" (click)="clearFilters()">Limpiar</button>
     </div>
 
@@ -69,7 +82,7 @@
             <th scope="col">Estado</th>
             <th scope="col">Prioridad</th>
             <th scope="col">Equipo</th>
-            <th scope="col">Fecha de creación</th>
+            <th scope="col">SLA</th>
           </tr>
         </thead>
         <tbody>
@@ -84,7 +97,7 @@
                 <span class="tag" [class]="prioridadTagClass(row.prioridad)">{{ row.prioridad }}</span>
               </td>
               <td>{{ row.equipo ?? '—' }}</td>
-              <td>{{ row.fecha_creacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</td>
+              <td [class.incident-list__sla--overdue]="slaOverdue(row)">{{ slaLabel(row) }}</td>
             </tr>
           } @empty {
             @if (incidents().length) {

@@ -55,6 +55,13 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
+/* Overdue SLA on the white table surface: #d20000 on #fff ≈ 5.6:1 (AA);
+   still ≈ 5.2:1 on the light-gray-100 row-hover tint.
+   Anchored to td so it outweighs the scoped `tbody td` color. */
+tbody td.incident-list__sla--overdue {
+  color: var(--color-red);
+}
+
 /* Filter bar.
    Spacing is intentionally finer than DESIGN.md §4's smallest named token
    (--space-grid-gutter-line, 1.5rem); literal rem matches this component's
