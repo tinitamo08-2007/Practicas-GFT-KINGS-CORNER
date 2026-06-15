@@ -22,23 +22,152 @@
         </section>
 
         <section class="incident-detail__section">
-          <h2>Análisis</h2>
-          <div class="incident-detail__field">
-            <span class="incident-detail__label">Causa</span>
-            @if (inc.causa) {
-              <p class="incident-detail__prose">{{ inc.causa }}</p>
-            } @else {
-              <p class="incident-detail__empty">Sin causa registrada</p>
+          <h2>Sugerencia de IA</h2>
+          @if (inc.sugerencia_ia; as sug) {
+            @if (sug.aceptada !== null) {
+              <p class="incident-detail__decision">
+                @if (sug.aceptada) {
+                  Sugerencia aceptada
+                } @else {
+                  Sugerencia rechazada — {{ sug.motivo_rechazo }}
+                }
+              </p>
             }
-          </div>
-          <div class="incident-detail__field">
-            <span class="incident-detail__label">Solución</span>
-            @if (inc.solucion) {
-              <p class="incident-detail__prose">{{ inc.solucion }}</p>
-            } @else {
-              <p class="incident-detail__empty">Sin solución registrada</p>
+            <div class="incident-detail__field">
+              <span class="incident-detail__label">Descripción mejorada</span>
+              <p class="incident-detail__prose">{{ sug.descripcion_mejorada }}</p>
+            </div>
+            <div class="incident-detail__field">
+              <span class="incident-detail__label">Causa probable</span>
+              <p class="incident-detail__prose">{{ sug.causa_probable ?? '—' }}</p>
+            </div>
+            <div class="incident-detail__field">
+              <span class="incident-detail__label">Pasos de resolución</span>
+              <ol class="incident-detail__pasos">
+                @for (paso of pasosResolucion(sug.pasos_resolucion); track $index) {
+                  <li class="incident-detail__prose">{{ paso }}</li>
+                }
+              </ol>
+            </div>
+            <dl class="incident-detail__rows">
+              <div class="incident-detail__row">
+                <dt>Categoría sugerida</dt>
+                <dd>{{ sug.categoria_sugerida }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Prioridad sugerida</dt>
+                <dd>{{ sug.prioridad_sugerida }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Tiempo estimado</dt>
+                <dd>{{ sug.tiempo_sugerido }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Impacto</dt>
+                <dd>{{ sug.impacto ?? '—' }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Subcategoría</dt>
+                <dd>{{ sug.subcategoria ?? '—' }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Escalado recomendado</dt>
+                <dd>{{ escaladoLabel(sug) }}</dd>
+              </div>
+            </dl>
+            @if (sug.etiquetas.length > 0) {
+              <div class="incident-detail__field incident-detail__field--etiquetas">
+                <span class="incident-detail__label">Etiquetas</span>
+                <div class="incident-detail__chips">
+                  @for (etiqueta of sug.etiquetas; track $index) {
+                    <span class="incident-detail__chip">{{ etiqueta }}</span>
+                  }
+                </div>
+              </div>
             }
-          </div>
+            <div class="incident-detail__acciones">
+              <div class="incident-detail__acciones-botones">
+                <button
+                  type="button"
+                  class="incident-detail__boton incident-detail__boton--tomar-sugerencia"
+                  [disabled]="accionEnCurso()"
+                  (click)="tomarSugerencia()"
+                >
+                  {{ tomarSugerenciaPhase() === 'saving' ? 'Guardando…' : 'Tomar sugerencia' }}
+                </button>
+                <button
+                  type="button"
+                  class="incident-detail__boton incident-detail__boton--editar-sugerencia"
+                  [disabled]="accionEnCurso()"
+                  (click)="editarSugerencia()"
+                >
+                  Editar sugerencia
+                </button>
+              </div>
+              @if (tomarSugerenciaPhase() === 'error-put') {
+                <p class="incident-detail__accion-error" role="status">
+                  No se pudo tomar la sugerencia.
+                  <button
+                    type="button"
+                    class="incident-detail__reintentar"
+                    [disabled]="accionEnCurso()"
+                    (click)="tomarSugerencia()"
+                  >
+                    Reintentar
+                  </button>
+                </p>
+              } @else if (tomarSugerenciaPhase() === 'error-patch') {
+                <p class="incident-detail__accion-error" role="status">
+                  Incidencia tomada, pero la sugerencia no se marcó como aceptada.
+                  <button
+                    type="button"
+                    class="incident-detail__reintentar"
+                    [disabled]="accionEnCurso()"
+                    (click)="tomarSugerencia()"
+                  >
+                    Reintentar
+                  </button>
+                </p>
+              }
+              @if (editarSugerenciaAbierto()) {
+                <div class="incident-detail__edicion">
+                  <label class="incident-detail__label" for="motivo-rechazo">Motivo del rechazo</label>
+                  <textarea
+                    #motivoArea
+                    id="motivo-rechazo"
+                    class="incident-detail__textarea"
+                    rows="3"
+                    [disabled]="accionEnCurso()"
+                    [value]="motivo()"
+                    (input)="setMotivo(motivoArea.value)"
+                  ></textarea>
+                  <button
+                    type="button"
+                    class="incident-detail__boton incident-detail__boton--tomar-sugerencia"
+                    [disabled]="accionEnCurso() || motivo().trim() === ''"
+                    (click)="enviarEdicion()"
+                  >
+                    {{ editarSugerenciaPhase() === 'saving' ? 'Guardando…' : 'Enviar edición' }}
+                  </button>
+                  @if (editarSugerenciaPhase() === 'error') {
+                    <p class="incident-detail__accion-error" role="status">
+                      No se pudo guardar la edición.
+                      <button
+                        type="button"
+                        class="incident-detail__reintentar"
+                        [disabled]="accionEnCurso()"
+                        (click)="enviarEdicion()"
+                      >
+                        Reintentar
+                      </button>
+                    </p>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="incident-detail__empty">Sin sugerencia de IA</p>
+          }
         </section>
       </div>
 
@@ -60,11 +189,11 @@
             </div>
             <div class="incident-detail__row">
               <dt>Asignado a</dt>
-              <dd>{{ inc.asignadoA ?? 'Sin asignar' }}</dd>
+              <dd>{{ inc.asignado_a ?? 'Sin asignar' }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Reportado por</dt>
-              <dd>{{ inc.reportadoPor }}</dd>
+              <dd>{{ inc.reportado_por }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Categoría</dt>
@@ -72,26 +201,31 @@
             </div>
             <div class="incident-detail__row">
               <dt>Vencimiento SLA</dt>
-              <dd>{{ inc.slaVencimiento ? (inc.slaVencimiento | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
+              <dd>{{ inc.sla_vencimiento ? (inc.sla_vencimiento | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Creación</dt>
-              <dd>{{ inc.fechaCreacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
+              <dd>{{ inc.fecha_creacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Actualización</dt>
-              <dd>{{ inc.fechaActualizacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
+              <dd>{{ inc.fecha_actualizacion | date:'d MMM y, HH:mm':undefined:'es-ES' }}</dd>
             </div>
             <div class="incident-detail__row">
               <dt>Cierre</dt>
-              <dd>{{ inc.fechaCierre ? (inc.fechaCierre | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
+              <dd>{{ inc.fecha_cierre ? (inc.fecha_cierre | date:'d MMM y, HH:mm':undefined:'es-ES') : '—' }}</dd>
             </div>
           </dl>
         </section>
       </aside>
     </div>
   </article>
-} @else if (loaded()) {
+} @else if (status() === 'error') {
+  <div class="incident-detail incident-detail--message">
+    <a class="incident-detail__back" routerLink="/incidents">← Volver a incidencias</a>
+    <p class="incident-detail__error">No se pudieron cargar las incidencias</p>
+  </div>
+} @else if (status() === 'success') {
   <div class="incident-detail incident-detail--message">
     <a class="incident-detail__back" routerLink="/incidents">← Volver a incidencias</a>
     <p class="incident-detail__notfound">Incidencia no encontrada</p>

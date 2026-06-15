@@ -1,17 +1,18 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 
 import { Incident, IncidentEstado, IncidentPrioridad } from '../incident.model';
-import { IncidentService } from '../incident.service';
+import { IncidentLoadStatus, IncidentService } from '../incident.service';
+import { SlaBucket, slaBucket } from '../sla';
 
 /** Value of the Equipo select's "Sin asignar" option; matches incidents whose equipo is null. */
 const SIN_ASIGNAR = '__SIN_ASIGNAR__';
 
 @Component({
   selector: 'app-incident-list',
-  imports: [DatePipe, RouterLink],
+  imports: [RouterLink],
   templateUrl: './incident-list.html',
   styleUrl: './incident-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,10 +26,20 @@ export class IncidentList {
     initialValue: [] as Incident[],
   });
 
+  protected readonly status = toSignal(this.service.getLoadStatus(), {
+    initialValue: 'loading' as IncidentLoadStatus,
+  });
+
+  /** "now" captured once per data load (shared shareReplay(1) fetch, no second request); no live ticking. */
+  private readonly slaNow = toSignal(this.service.getIncidents().pipe(map(() => Date.now())), {
+    initialValue: Date.now(),
+  });
+
   protected readonly searchTerm = signal('');
   protected readonly estadoFilter = signal<IncidentEstado | ''>('');
   protected readonly prioridadFilter = signal<IncidentPrioridad | ''>('');
   protected readonly equipoFilter = signal<string>('');
+  protected readonly slaFilter = signal<SlaBucket | ''>('');
 
   protected readonly equipoOptions = computed(() => {
     const teams = new Set<string>();
@@ -45,6 +56,8 @@ export class IncidentList {
     const estado = this.estadoFilter();
     const prioridad = this.prioridadFilter();
     const equipo = this.equipoFilter();
+    const sla = this.slaFilter();
+    const nowMs = this.slaNow();
 
     return this.incidents().filter((incident) => {
       const matchesSearch =
@@ -56,8 +69,9 @@ export class IncidentList {
       const matchesEquipo =
         equipo === '' ||
         (equipo === SIN_ASIGNAR ? incident.equipo === null : incident.equipo === equipo);
+      const matchesSla = sla === '' || slaBucket(incident, nowMs) === sla;
 
-      return matchesSearch && matchesEstado && matchesPrioridad && matchesEquipo;
+      return matchesSearch && matchesEstado && matchesPrioridad && matchesEquipo && matchesSla;
     });
   });
 
@@ -69,11 +83,16 @@ export class IncidentList {
     this.prioridadFilter.set(value as IncidentPrioridad | '');
   }
 
+  protected setSla(value: string): void {
+    this.slaFilter.set(value as SlaBucket | '');
+  }
+
   protected clearFilters(): void {
     this.searchTerm.set('');
     this.estadoFilter.set('');
     this.prioridadFilter.set('');
     this.equipoFilter.set('');
+    this.slaFilter.set('');
   }
 
   private normalize(value: string): string {
@@ -83,14 +102,18 @@ export class IncidentList {
       .toLowerCase();
   }
 
-  protected estadoTagClass(estado: Incident['estado']): string {
+  protected estadoTagClass(estado: string): string {
     switch (estado) {
-      case 'En progreso':
-        return 'tag-in-progress';
-      case 'Resuelta':
-        return 'tag-resolved';
-      case 'Cancelada':
-        return 'tag-cancelled';
+      case 'Por hacer':
+        return 'tag-por-hacer';
+      case 'En curso':
+        return 'tag-en-curso';
+      case 'En revisión':
+        return 'tag-en-revision';
+      case 'Finalizado':
+        return 'tag-finalizado';
+      default:
+        return 'tag-otro';
     }
   }
 
@@ -105,5 +128,27 @@ export class IncidentList {
       case 'Baja':
         return 'tag-low';
     }
+  }
+
+  /** Remaining SLA time, compact with the largest unit; blank when there is no live deadline. */
+  protected slaLabel(incident: Incident): string {
+    if (incident.sla_vencimiento === null || slaBucket(incident, this.slaNow()) === null) {
+      return '';
+    }
+    const remaining = Date.parse(incident.sla_vencimiento) - this.slaNow();
+    const sign = remaining < 0 ? '-' : '';
+    const abs = Math.abs(remaining);
+    const hourMs = 60 * 60 * 1000;
+    if (abs < hourMs) {
+      return `${sign}${Math.floor(abs / (60 * 1000))}min`;
+    }
+    if (abs < 24 * hourMs) {
+      return `${sign}${Math.floor(abs / hourMs)}h`;
+    }
+    return `${sign}${Math.floor(abs / (24 * hourMs))}d`;
+  }
+
+  protected slaOverdue(incident: Incident): boolean {
+    return slaBucket(incident, this.slaNow()) === 'vencida';
   }
 }

@@ -13,12 +13,11 @@
   letter-spacing: -0.01em;
 }
 
-/* Resumen cards */
+/* Card grids (Resumen, Control diario), nested inside their section cards */
 .estadisticas__resumen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: 1rem;
-  margin-bottom: 2.5rem;
 }
 
 .estadisticas__card {
@@ -47,6 +46,10 @@
 /* Distribution sections */
 .estadisticas__section {
   margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
 }
 
 .estadisticas__section:last-child {
@@ -60,6 +63,24 @@
   font-size: 1.5rem;
   line-height: 1.2;
   letter-spacing: -0.01em;
+}
+
+/* Two-up chart row: side-by-side section cards that stack when the viewport narrows */
+.estadisticas__charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.estadisticas__charts .estadisticas__section {
+  margin-bottom: 0;
+}
+
+/* Chart.js with maintainAspectRatio: false needs a positioned, fixed-height parent */
+.estadisticas__chart {
+  position: relative;
+  height: 280px;
 }
 
 .estadisticas__bars {
@@ -101,12 +122,16 @@
   white-space: nowrap;
 }
 
-/* Empty / loading messages */
+/* Empty / loading / error messages */
 .estadisticas__empty,
-.estadisticas__loading {
+.estadisticas__loading,
+.estadisticas__error {
   margin: 2.5rem 0 0;
   padding: 2.5rem 1rem;
   text-align: center;
   color: var(--color-gray-500);
   font-size: var(--text-sm);
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
 }

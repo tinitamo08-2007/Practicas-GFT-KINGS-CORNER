@@ -13,7 +13,7 @@
   --color-gray-300: #b3b8bf;
   --color-gray-500: #4d535a;
   --color-gray-700: #1c1e21;
-  --color-light-gray-100: #f3f5f6;
+  --color-light-gray-100: #f4f6f9;
   --color-gft-dark: #001326;
   --radius-sm: 4px;
   --text-sm: 0.875rem;
@@ -34,12 +34,27 @@
 .tag-medium { background: var(--color-warn); color: var(--color-gft-dark); }
 .tag-low { background: var(--color-green-700); color: #fff; }
 
-.tag-in-progress { background: var(--color-primary-700); color: #fff; }
-.tag-resolved { background: var(--color-green-700); color: #fff; }
-.tag-cancelled { background: var(--color-gray-300); color: var(--color-gft-dark); }
+.tag-por-hacer { background: var(--color-primary-500); color: #fff; }
+.tag-en-curso { background: var(--color-primary-700); color: #fff; }
+.tag-en-revision { background: var(--color-warn); color: var(--color-gft-dark); }
+.tag-finalizado { background: var(--color-green-700); color: #fff; }
+.tag-otro { background: var(--color-gray-500); color: #fff; }
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Visually hidden but kept in the accessibility tree (e.g. chart fallback tables). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @font-face {
@@ -161,6 +176,6 @@ body {
   font-weight: 400;
   letter-spacing: -0.01em;
   color: #1c1e21; /* --color-gray-700 from DESIGN.md */
-  background: #ffffff;
+  background: var(--color-light-gray-100);
   margin: 0;
 }

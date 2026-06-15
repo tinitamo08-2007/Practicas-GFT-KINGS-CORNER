@@ -1,24 +1,54 @@
-export type IncidentEstado = 'En progreso' | 'Resuelta' | 'Cancelada';
+/** The four canonical estado values, in lifecycle order. The backend may emit others. */
+export type IncidentEstado = 'Por hacer' | 'En curso' | 'En revisión' | 'Finalizado';
+
+/** Canonical estados in lifecycle order — drives the filter dropdown and the Estadísticas ordering. */
+export const CANONICAL_ESTADOS: readonly IncidentEstado[] = [
+  'Por hacer',
+  'En curso',
+  'En revisión',
+  'Finalizado',
+];
 
 export type IncidentPrioridad = 'Critica' | 'Alta' | 'Media' | 'Baja';
+
+/** The nested AI analysis (`sugerencia_ia` on the wire). Typed to match the backend; not rendered this cycle. */
+export interface SugerenciaIA {
+  id: number;
+  categoria_sugerida: string;
+  prioridad_sugerida: string;
+  tiempo_sugerido: string;
+  descripcion_mejorada: string;
+  pasos_resolucion: string;
+  causa_probable: string | null;
+  subcategoria: string | null;
+  impacto: string | null;
+  escalado_recomendado: boolean;
+  nivel_escalado: string | null;
+  etiquetas: string[];
+  aceptada: boolean | null;
+  motivo_rechazo: string | null;
+  creada_en: string;
+}
 
 export interface Incident {
   id: number;
   codigo: string;
-  jiraId: string | null;
+  jira_id: string | null;
   titulo: string;
   descripcion: string;
-  estado: IncidentEstado;
+  /** Tolerant: the canonical four plus any other value the backend/Jira may emit. */
+  estado: string;
   prioridad: IncidentPrioridad;
   categoria: string | null;
-  reportadoPor: string;
-  asignadoA: string | null;
+  reportado_por: string;
+  asignado_a: string | null;
   equipo: string | null;
   origen: string;
   causa: string | null;
   solucion: string | null;
-  fechaCreacion: string;
-  fechaActualizacion: string;
-  fechaCierre: string | null;
-  slaVencimiento: string | null;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+  fecha_cierre: string | null;
+  sla_vencimiento: string | null;
+  sugerencia_ia: SugerenciaIA | null;
 }
