@@ -22,23 +22,152 @@
         </section>
 
         <section class="incident-detail__section">
-          <h2>Análisis</h2>
-          <div class="incident-detail__field">
-            <span class="incident-detail__label">Causa</span>
-            @if (inc.causa) {
-              <p class="incident-detail__prose">{{ inc.causa }}</p>
-            } @else {
-              <p class="incident-detail__empty">Sin causa registrada</p>
+          <h2>Sugerencia de IA</h2>
+          @if (inc.sugerencia_ia; as sug) {
+            @if (sug.aceptada !== null) {
+              <p class="incident-detail__decision">
+                @if (sug.aceptada) {
+                  Sugerencia aceptada
+                } @else {
+                  Sugerencia rechazada — {{ sug.motivo_rechazo }}
+                }
+              </p>
             }
-          </div>
-          <div class="incident-detail__field">
-            <span class="incident-detail__label">Solución</span>
-            @if (inc.solucion) {
-              <p class="incident-detail__prose">{{ inc.solucion }}</p>
-            } @else {
-              <p class="incident-detail__empty">Sin solución registrada</p>
+            <div class="incident-detail__field">
+              <span class="incident-detail__label">Descripción mejorada</span>
+              <p class="incident-detail__prose">{{ sug.descripcion_mejorada }}</p>
+            </div>
+            <div class="incident-detail__field">
+              <span class="incident-detail__label">Causa probable</span>
+              <p class="incident-detail__prose">{{ sug.causa_probable ?? '—' }}</p>
+            </div>
+            <div class="incident-detail__field">
+              <span class="incident-detail__label">Pasos de resolución</span>
+              <ol class="incident-detail__pasos">
+                @for (paso of pasosResolucion(sug.pasos_resolucion); track $index) {
+                  <li class="incident-detail__prose">{{ paso }}</li>
+                }
+              </ol>
+            </div>
+            <dl class="incident-detail__rows">
+              <div class="incident-detail__row">
+                <dt>Categoría sugerida</dt>
+                <dd>{{ sug.categoria_sugerida }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Prioridad sugerida</dt>
+                <dd>{{ sug.prioridad_sugerida }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Tiempo estimado</dt>
+                <dd>{{ sug.tiempo_sugerido }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Impacto</dt>
+                <dd>{{ sug.impacto ?? '—' }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Subcategoría</dt>
+                <dd>{{ sug.subcategoria ?? '—' }}</dd>
+              </div>
+              <div class="incident-detail__row">
+                <dt>Escalado recomendado</dt>
+                <dd>{{ escaladoLabel(sug) }}</dd>
+              </div>
+            </dl>
+            @if (sug.etiquetas.length > 0) {
+              <div class="incident-detail__field incident-detail__field--etiquetas">
+                <span class="incident-detail__label">Etiquetas</span>
+                <div class="incident-detail__chips">
+                  @for (etiqueta of sug.etiquetas; track $index) {
+                    <span class="incident-detail__chip">{{ etiqueta }}</span>
+                  }
+                </div>
+              </div>
             }
-          </div>
+            <div class="incident-detail__acciones">
+              <div class="incident-detail__acciones-botones">
+                <button
+                  type="button"
+                  class="incident-detail__boton incident-detail__boton--tomar"
+                  [disabled]="accionEnCurso()"
+                  (click)="tomar()"
+                >
+                  {{ tomarPhase() === 'saving' ? 'Guardando…' : 'Tomar incidencia' }}
+                </button>
+                <button
+                  type="button"
+                  class="incident-detail__boton incident-detail__boton--comentar"
+                  [disabled]="accionEnCurso()"
+                  (click)="toggleComentar()"
+                >
+                  Comentar
+                </button>
+              </div>
+              @if (tomarPhase() === 'error-put') {
+                <p class="incident-detail__accion-error" role="status">
+                  No se pudo tomar la incidencia.
+                  <button
+                    type="button"
+                    class="incident-detail__reintentar"
+                    [disabled]="accionEnCurso()"
+                    (click)="tomar()"
+                  >
+                    Reintentar
+                  </button>
+                </p>
+              } @else if (tomarPhase() === 'error-patch') {
+                <p class="incident-detail__accion-error" role="status">
+                  Incidencia tomada, pero la sugerencia no se marcó como aceptada.
+                  <button
+                    type="button"
+                    class="incident-detail__reintentar"
+                    [disabled]="accionEnCurso()"
+                    (click)="tomar()"
+                  >
+                    Reintentar
+                  </button>
+                </p>
+              }
+              @if (comentarOpen()) {
+                <div class="incident-detail__comentario">
+                  <label class="incident-detail__label" for="motivo-rechazo">Motivo del rechazo</label>
+                  <textarea
+                    #motivoArea
+                    id="motivo-rechazo"
+                    class="incident-detail__textarea"
+                    rows="3"
+                    [disabled]="accionEnCurso()"
+                    [value]="motivo()"
+                    (input)="setMotivo(motivoArea.value)"
+                  ></textarea>
+                  <button
+                    type="button"
+                    class="incident-detail__boton incident-detail__boton--tomar"
+                    [disabled]="accionEnCurso() || motivo().trim() === ''"
+                    (click)="enviarComentario()"
+                  >
+                    {{ comentarPhase() === 'saving' ? 'Guardando…' : 'Enviar comentario' }}
+                  </button>
+                  @if (comentarPhase() === 'error') {
+                    <p class="incident-detail__accion-error" role="status">
+                      No se pudo guardar el comentario.
+                      <button
+                        type="button"
+                        class="incident-detail__reintentar"
+                        [disabled]="accionEnCurso()"
+                        (click)="enviarComentario()"
+                      >
+                        Reintentar
+                      </button>
+                    </p>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="incident-detail__empty">Sin sugerencia de IA</p>
+          }
         </section>
       </div>
 

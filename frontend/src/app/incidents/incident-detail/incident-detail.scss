@@ -43,8 +43,10 @@
   color: var(--color-gray-700);
 }
 
-/* Non-semantic origin pill — distinct from the estado/prioridad .tag classes. */
-.incident-detail__origen {
+/* Non-semantic pills — the origen badge and the AI etiquetas chips share one muted recipe
+   (DESIGN.md's .tag-gray pattern), distinct from the semantic estado/prioridad .tag classes. */
+.incident-detail__origen,
+.incident-detail__chip {
   display: inline-block;
   padding: 4px 10px;
   border: 1px solid var(--color-gray-200);
@@ -196,4 +198,155 @@
   background: #fff;
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
+}
+
+/* Sugerencia de IA */
+.incident-detail__decision {
+  margin: 0 0 1.25rem;
+  color: var(--color-gray-700);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* The AI text carries its own "1." numbering, so the list hides its markers. */
+.incident-detail__pasos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.incident-detail__pasos li {
+  margin-bottom: 0.375rem;
+}
+
+.incident-detail__pasos li:last-child {
+  margin-bottom: 0;
+}
+
+.incident-detail__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Actions footer — the hairline divider keeps the decision UI inside the suggestion card. */
+.incident-detail__acciones {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.incident-detail__acciones-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* DESIGN.md button recipes, component-scoped (styles.scss stays untouched). */
+.incident-detail__boton {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.incident-detail__boton:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.incident-detail__boton:disabled {
+  background: #f3f5f6; /* --color-gray-100 per DESIGN.md (not declared in :root) */
+  color: var(--color-gray-300);
+  cursor: default;
+}
+
+.incident-detail__boton--tomar {
+  background: var(--color-primary-100);
+  color: var(--color-gft-dark);
+}
+
+.incident-detail__boton--tomar:hover:not(:disabled) {
+  background: #71b4f9; /* --color-primary-200 per DESIGN.md (not declared in :root) */
+}
+
+.incident-detail__boton--comentar {
+  border: 1px solid var(--color-gray-200);
+  background: #fff;
+  color: var(--color-gft-dark);
+}
+
+.incident-detail__boton--comentar:hover:not(:disabled) {
+  background: var(--color-gray-200);
+}
+
+.incident-detail__comentario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.incident-detail__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--color-gray-700);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  resize: vertical;
+}
+
+.incident-detail__textarea:focus-visible {
+  border-color: var(--color-primary-500);
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.incident-detail__textarea:disabled {
+  background: #f3f5f6; /* --color-gray-100 per DESIGN.md (not declared in :root) */
+  color: var(--color-gray-300);
+}
+
+/* Per-action recoverable error — red per the forms error recipe, distinct from the page error. */
+.incident-detail__accion-error {
+  margin: 0.75rem 0 0;
+  color: var(--color-red);
+  font-size: var(--text-sm);
+}
+
+.incident-detail__reintentar {
+  margin-left: 0.5rem;
+  padding: 4px 10px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--color-gft-dark);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.incident-detail__reintentar:hover:not(:disabled) {
+  background: var(--color-gray-200);
+}
+
+.incident-detail__reintentar:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.incident-detail__reintentar:disabled {
+  color: var(--color-gray-300);
+  cursor: default;
 }
