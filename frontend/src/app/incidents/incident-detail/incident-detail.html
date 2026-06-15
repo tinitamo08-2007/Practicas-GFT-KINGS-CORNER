@@ -89,48 +89,48 @@
               <div class="incident-detail__acciones-botones">
                 <button
                   type="button"
-                  class="incident-detail__boton incident-detail__boton--tomar"
+                  class="incident-detail__boton incident-detail__boton--tomar-sugerencia"
                   [disabled]="accionEnCurso()"
-                  (click)="tomar()"
+                  (click)="tomarSugerencia()"
                 >
-                  {{ tomarPhase() === 'saving' ? 'Guardando…' : 'Tomar incidencia' }}
+                  {{ tomarSugerenciaPhase() === 'saving' ? 'Guardando…' : 'Tomar sugerencia' }}
                 </button>
                 <button
                   type="button"
-                  class="incident-detail__boton incident-detail__boton--comentar"
+                  class="incident-detail__boton incident-detail__boton--editar-sugerencia"
                   [disabled]="accionEnCurso()"
-                  (click)="toggleComentar()"
+                  (click)="editarSugerencia()"
                 >
-                  Comentar
+                  Editar sugerencia
                 </button>
               </div>
-              @if (tomarPhase() === 'error-put') {
+              @if (tomarSugerenciaPhase() === 'error-put') {
                 <p class="incident-detail__accion-error" role="status">
-                  No se pudo tomar la incidencia.
+                  No se pudo tomar la sugerencia.
                   <button
                     type="button"
                     class="incident-detail__reintentar"
                     [disabled]="accionEnCurso()"
-                    (click)="tomar()"
+                    (click)="tomarSugerencia()"
                   >
                     Reintentar
                   </button>
                 </p>
-              } @else if (tomarPhase() === 'error-patch') {
+              } @else if (tomarSugerenciaPhase() === 'error-patch') {
                 <p class="incident-detail__accion-error" role="status">
                   Incidencia tomada, pero la sugerencia no se marcó como aceptada.
                   <button
                     type="button"
                     class="incident-detail__reintentar"
                     [disabled]="accionEnCurso()"
-                    (click)="tomar()"
+                    (click)="tomarSugerencia()"
                   >
                     Reintentar
                   </button>
                 </p>
               }
-              @if (comentarOpen()) {
-                <div class="incident-detail__comentario">
+              @if (editarSugerenciaAbierto()) {
+                <div class="incident-detail__edicion">
                   <label class="incident-detail__label" for="motivo-rechazo">Motivo del rechazo</label>
                   <textarea
                     #motivoArea
@@ -143,20 +143,20 @@
                   ></textarea>
                   <button
                     type="button"
-                    class="incident-detail__boton incident-detail__boton--tomar"
+                    class="incident-detail__boton incident-detail__boton--tomar-sugerencia"
                     [disabled]="accionEnCurso() || motivo().trim() === ''"
-                    (click)="enviarComentario()"
+                    (click)="enviarEdicion()"
                   >
-                    {{ comentarPhase() === 'saving' ? 'Guardando…' : 'Enviar comentario' }}
+                    {{ editarSugerenciaPhase() === 'saving' ? 'Guardando…' : 'Enviar edición' }}
                   </button>
-                  @if (comentarPhase() === 'error') {
+                  @if (editarSugerenciaPhase() === 'error') {
                     <p class="incident-detail__accion-error" role="status">
-                      No se pudo guardar el comentario.
+                      No se pudo guardar la edición.
                       <button
                         type="button"
                         class="incident-detail__reintentar"
                         [disabled]="accionEnCurso()"
-                        (click)="enviarComentario()"
+                        (click)="enviarEdicion()"
                       >
                         Reintentar
                       </button>

@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { NotFound } from './not-found/not-found';
+
 export const routes: Routes = [
   {
     path: 'incidents',
@@ -14,5 +16,9 @@ export const routes: Routes = [
   {
     path: 'estadisticas',
     loadComponent: () => import('./estadisticas/estadisticas').then((m) => m.Estadisticas),
+  },
+  {
+    path: '**',
+    component: NotFound,
   },
 ];

@@ -16,13 +16,13 @@ import { IncidentLoadStatus, IncidentService } from '../incident.service';
 
 /**
  * TODO(equipo): no user system exists yet — replace when real auth lands. Under decision (c)
- * this is both the assignee written by TOMAR and the person-of-record accepting the AI.
+ * this is both the assignee written by TOMAR SUGERENCIA and the person-of-record accepting the AI.
  */
 export const USUARIO_ACTUAL = 'Técnico de soporte';
 
-/** TOMAR phases: 'error-patch' = the PUT succeeded but the PATCH failed (retry only the PATCH). */
-type TomarPhase = 'idle' | 'saving' | 'error-put' | 'error-patch';
-type ComentarPhase = 'idle' | 'saving' | 'error';
+/** TOMAR SUGERENCIA phases: 'error-patch' = the PUT succeeded but the PATCH failed (retry only the PATCH). */
+type TomarSugerenciaPhase = 'idle' | 'saving' | 'error-put' | 'error-patch';
+type EditarSugerenciaPhase = 'idle' | 'saving' | 'error';
 
 @Component({
   selector: 'app-incident-detail',
@@ -50,14 +50,14 @@ export class IncidentDetail {
     this.incidents().find((i) => i.codigo === this.codigo()),
   );
 
-  protected readonly tomarPhase = signal<TomarPhase>('idle');
-  protected readonly comentarPhase = signal<ComentarPhase>('idle');
-  protected readonly comentarOpen = signal(false);
+  protected readonly tomarSugerenciaPhase = signal<TomarSugerenciaPhase>('idle');
+  protected readonly editarSugerenciaPhase = signal<EditarSugerenciaPhase>('idle');
+  protected readonly editarSugerenciaAbierto = signal(false);
   protected readonly motivo = signal('');
 
   /** One mutation in flight at a time: every action control disables while either saves. */
   protected readonly accionEnCurso = computed(
-    () => this.tomarPhase() === 'saving' || this.comentarPhase() === 'saving',
+    () => this.tomarSugerenciaPhase() === 'saving' || this.editarSugerenciaPhase() === 'saving',
   );
 
   protected estadoTagClass(estado: string): string {
@@ -107,22 +107,22 @@ export class IncidentDetail {
     this.motivo.set(value);
   }
 
-  protected toggleComentar(): void {
-    this.comentarOpen.update((open) => !open);
+  protected editarSugerencia(): void {
+    this.editarSugerenciaAbierto.update((open) => !open);
   }
 
   /**
-   * TOMAR = accept-and-take (decision (c)): PUT estado/asignado, then PATCH aceptada, then ONE
+   * TOMAR SUGERENCIA = accept-and-take (decision (c)): PUT estado/asignado, then PATCH aceptada, then ONE
    * refresh() after both succeed. After 'error-patch' the PUT is already applied on the server,
    * so the retry re-runs only the PATCH — never a second PUT.
    */
-  protected async tomar(): Promise<void> {
+  protected async tomarSugerencia(): Promise<void> {
     const incident = this.incident();
     if (!incident || this.accionEnCurso()) {
       return;
     }
-    const soloPatch = this.tomarPhase() === 'error-patch';
-    this.tomarPhase.set('saving');
+    const soloPatch = this.tomarSugerenciaPhase() === 'error-patch';
+    this.tomarSugerenciaPhase.set('saving');
     if (!soloPatch) {
       try {
         await firstValueFrom(
@@ -132,7 +132,7 @@ export class IncidentDetail {
           }),
         );
       } catch {
-        this.tomarPhase.set('error-put');
+        this.tomarSugerenciaPhase.set('error-put');
         return;
       }
     }
@@ -141,33 +141,33 @@ export class IncidentDetail {
         this.service.revisarSugerencia(incident.id, { aceptada: true, motivo_rechazo: null }),
       );
     } catch {
-      this.tomarPhase.set('error-patch');
+      this.tomarSugerenciaPhase.set('error-patch');
       return;
     }
-    this.tomarPhase.set('idle');
-    this.comentarPhase.set('idle');
+    this.tomarSugerenciaPhase.set('idle');
+    this.editarSugerenciaPhase.set('idle');
     this.service.refresh();
   }
 
   /** The dissent path — the only place aceptada is set false; the motivo travels with it. */
-  protected async enviarComentario(): Promise<void> {
+  protected async enviarEdicion(): Promise<void> {
     const incident = this.incident();
     const texto = this.motivo().trim();
     if (!incident || texto === '' || this.accionEnCurso()) {
       return;
     }
-    this.comentarPhase.set('saving');
+    this.editarSugerenciaPhase.set('saving');
     try {
       await firstValueFrom(
         this.service.revisarSugerencia(incident.id, { aceptada: false, motivo_rechazo: texto }),
       );
     } catch {
-      this.comentarPhase.set('error');
+      this.editarSugerenciaPhase.set('error');
       return;
     }
-    this.comentarPhase.set('idle');
-    this.tomarPhase.set('idle');
-    this.comentarOpen.set(false);
+    this.editarSugerenciaPhase.set('idle');
+    this.tomarSugerenciaPhase.set('idle');
+    this.editarSugerenciaAbierto.set(false);
     this.motivo.set('');
     this.service.refresh();
   }
